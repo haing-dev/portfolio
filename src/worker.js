@@ -118,6 +118,9 @@ async function checkPassword(env, password) {
 
 // ---------- validation ----------
 const SAFE_URL = /^(https?:\/\/|mailto:|tel:)/i;
+const IMAGE_PATH = /^\/api\/image\/[a-z0-9]{6,40}$/;
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE = 5 * 1024 * 1024;
 function validate(c) {
   if (!c || typeof c !== "object" || !c.profile || !Array.isArray(c.projects)) return "Content is missing the profile or projects.";
   for (const p of c.projects) {
@@ -125,6 +128,7 @@ function validate(c) {
     if (p.url && !SAFE_URL.test(p.url)) return `The link for "${p.title}" must start with https://.`;
   }
   for (const k of ["linkedin", "github"]) if (c.profile[k] && !SAFE_URL.test(c.profile[k])) return `The ${k} link must start with https://.`;
+  if (c.profile.background && !IMAGE_PATH.test(c.profile.background)) return "The background must be an uploaded image.";
   return null;
 }
 
@@ -141,6 +145,14 @@ async function api(request, env, url) {
 
   // Mutations must come from this site's own script (blocks cross-site form posts).
   if (method !== "GET" && request.headers.get("x-requested-with") !== "portfolio") return json({ error: "Bad request." }, 400);
+
+  // Uploaded images are public once referenced; ids are random and never reused, so they cache forever.
+  const img = path.match(/^\/image\/([a-z0-9]{6,40})$/);
+  if (img && method === "GET") {
+    const { value, metadata } = await env.CONTENT.getWithMetadata(`img:${img[1]}`, { type: "arrayBuffer" });
+    if (!value) return new Response("Not found", { status: 404 });
+    return new Response(value, { headers: { "content-type": metadata?.type || "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });
+  }
 
   if (path === "/content" && method === "GET") {
     const pub = await getPublished(env);
@@ -184,6 +196,16 @@ async function api(request, env, url) {
     const doc = { content: body.content, updatedAt: new Date().toISOString() };
     await env.CONTENT.put("draft", JSON.stringify(doc));
     return json({ ok: true, updatedAt: doc.updatedAt, dirty: JSON.stringify(doc.content) !== JSON.stringify(pub.content) });
+  }
+
+  if (path === "/image" && method === "POST") {
+    const type = (request.headers.get("content-type") || "").split(";")[0].trim();
+    if (!IMAGE_TYPES.includes(type)) return json({ error: "Upload a JPEG, PNG or WebP image." }, 400);
+    const body = await request.arrayBuffer();
+    if (body.byteLength > MAX_IMAGE) return json({ error: "The image is larger than 5 MB." }, 400);
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+    await env.CONTENT.put(`img:${id}`, body, { metadata: { type } });
+    return json({ ok: true, path: `/api/image/${id}` });
   }
 
   if (path === "/discard" && method === "POST") {

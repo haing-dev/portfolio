@@ -31,3 +31,17 @@ r = await call("/draft"); assert.equal(r.data.content.profile.headline, pub0.pro
 r = await call("/discard", { method: "POST" }); r = await call("/draft"); assert.equal(r.data.dirty, false);
 r = await call("/logout", { method: "POST" }); r = await call("/me"); assert.equal(r.data.owner, false);
 console.log("all API checks passed");
+
+// image upload
+await call("/login", { method: "POST", body: { email: "haing.wharton@gmail.com", password: PASS } });
+const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="), c => c.charCodeAt(0));
+let up = await fetch(BASE + "/api/image", { method: "POST", headers: { "content-type": "image/png", "x-requested-with": "portfolio", cookie: jar }, body: png });
+let uj = await up.json(); assert.equal(up.status, 200); assert.match(uj.path, /^\/api\/image\/[a-f0-9]+$/);
+const got = await fetch(BASE + uj.path); assert.equal(got.status, 200); assert.equal(got.headers.get("content-type"), "image/png");
+up = await fetch(BASE + "/api/image", { method: "POST", headers: { "content-type": "image/svg+xml", "x-requested-with": "portfolio", cookie: jar }, body: "<svg/>" }); assert.equal(up.status, 400, "svg rejected");
+const d2 = (await call("/draft")).data.content; d2.profile.background = "https://evil.example/x.png";
+assert.equal((await call("/draft", { method: "PUT", body: { content: d2 } })).status, 400, "external background rejected");
+d2.profile.background = uj.path; assert.equal((await call("/draft", { method: "PUT", body: { content: d2 } })).status, 200);
+await call("/discard", { method: "POST" }); await call("/logout", { method: "POST" });
+up = await fetch(BASE + "/api/image", { method: "POST", headers: { "content-type": "image/png", "x-requested-with": "portfolio" }, body: png }); assert.equal(up.status, 401, "upload needs sign-in");
+console.log("image checks passed");

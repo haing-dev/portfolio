@@ -1,14 +1,15 @@
 {
   "profile": {
     "name": "Hai Nguyen",
-    "title": "Hai N.’s Portfolio",
+    "title": "Hai’s Portfolio",
     "about": "I'm curious by nature, and I love taking a complex question apart: gathering the data and the insights around it, then putting the answer together in the most intuitive form I can.\n\nI've done this across venture capital, climate-tech start-ups and e-commerce in Southeast Asia, and in the tools below, which I build in my spare time.",
     "location": "Vancouver, Canada",
     "timezone": "America/Vancouver",
     "email": "haing.penn@gmail.com",
     "phone": "+1 236 979 9494",
     "linkedin": "https://www.linkedin.com/in/hai-n-13a45370/",
-    "github": "https://github.com/haing-dev"
+    "github": "https://github.com/haing-dev",
+    "background": ""
   },
   "projects": [
     {
@@ -16,12 +17,7 @@
       "motif": "map",
       "tag": "Climate markets",
       "title": "Carbon Credit Atlas",
-      "summary": "A free map of carbon credit projects across every major registry, with who is buying them.",
-      "facts": [
-        "~14,000 projects",
-        "10+ registries and programmes",
-        "Refreshed automatically"
-      ],
+      "summary": "Tracks every carbon credit project across the world and their buyers.",
       "context": "Carbon credit data is split across more than ten registries and programmes — Verra, Gold Standard, the UN's CDM, Global Carbon Council, UCR, Japan's JCM, Puro.earth, Isometric and Paris Agreement Article 6 — each with its own format. Buyers are mostly named only in press releases. Working on Rize's first carbon credit offtake, I had no single place to see which projects exist in a market, how much they have issued and who buys them.",
       "objective": "One public, verifiable view of every project in a region: where it is, its credit type, stage and volumes, and its announced buyers. It started with Asia excluding mainland China and now covers every region.",
       "methodology": [
@@ -39,13 +35,8 @@
       "id": "biotech",
       "motif": "crash",
       "tag": "Biotech investing",
-      "title": "Biotech Crash Triage",
-      "summary": "Calls each US biotech stock that has just crashed a Buy candidate, Watch or Avoid, and backtests every call.",
-      "facts": [
-        "~1,040 companies",
-        "~4,000 episodes since 2020",
-        "Every call backtested"
-      ],
+      "title": "US Biotech Screener",
+      "summary": "Screens out-of-favor US biotech stocks to find comeback candidates.",
       "context": "When a biotech stock halves on trial news, specialist investors say some falls are deserved and some are not, but that judgement is tacit and rarely tested. Average post-crash returns hide the difference between a company with cash, committed funds and other programmes, and one about to raise money on harsh terms.",
       "objective": "On the day a crash or slide is detected, give a rule-based call using only data that was public that day, and check every past call against what happened over the following year.",
       "methodology": [
@@ -63,13 +54,8 @@
       "id": "macro",
       "motif": "gauge",
       "tag": "Macro",
-      "title": "Macro Compass",
-      "summary": "Reads 28 public US signals to say where the economy, inflation and markets stand.",
-      "facts": [
-        "28 signals",
-        "3 readings",
-        "History back to 1970"
-      ],
+      "title": "Macro Tracking System",
+      "summary": "Monitors public US macroeconomic signals to analyze and predict the state of the economy.",
       "context": "Macro calls are often made from a few remembered thresholds and anecdotes: one yield level, one indicator, one company's comments. The reading is rarely checked against history, and noisy monthly data makes it easy to change your mind too often.",
       "objective": "One page that answers three questions — is the economy weakening, is inflation running hot, are markets under stress — and shows the evidence behind each answer.",
       "methodology": [

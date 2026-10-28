@@ -29,7 +29,6 @@ function setPath(obj, path, value) {
 }
 const paras = (s) => String(s || "").split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
 const lines = (a) => (Array.isArray(a) ? a : String(a || "").split("\n")).map(t => t.trim()).filter(Boolean);
-const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 
 async function call(path, opts = {}) {
   const res = await fetch("/api" + path, {
@@ -130,13 +129,40 @@ function render() {
 }
 
 function topbar() {
-  const dark = document.documentElement.dataset.theme === "dark";
   return h("nav", { class: "topbar wrap", "aria-label": "Page" },
     h("div", { class: "tb-left" },
       h("a", { class: "bracket", href: "#work" }, "[ Tools ]"),
       h("a", { class: "bracket", href: "#experience" }, "[ Experience ]"),
-      h("a", { class: "bracket", href: "#education" }, "[ Education ]")),
-    h("button", { type: "button", class: "bracket", "aria-pressed": String(dark), onclick: toggleTheme }, dark ? "[ Light mode ]" : "[ Dark mode ]"));
+      h("a", { class: "bracket", href: "#education" }, "[ Education ]")));
+}
+
+function panelBackground(p) {
+  const src = /^\/api\/image\/[a-z0-9]+$/.test(p.background || "") ? p.background : null;
+  return src ? h("img", { class: "panel-img", src, alt: "", decoding: "async" }) : waves();
+}
+function backgroundTools(p) {
+  const file = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp", class: "sr", "aria-label": "Background image" });
+  file.addEventListener("change", () => file.files[0] && uploadBackground(file.files[0]));
+  return h("div", { class: "bg-tools" }, file,
+    h("button", { type: "button", class: "tb-btn", onclick: () => file.click() }, p.background ? "[ Replace background ]" : "[ Upload background ]"),
+    p.background && h("button", { type: "button", class: "tb-btn danger", onclick: () => { p.background = ""; changed(true); } }, "[ Remove background ]"));
+}
+// Shrink large photos in the browser before upload (max 2400 px wide, JPEG).
+async function uploadBackground(f) {
+  try {
+    toast("Uploading background…");
+    const bmp = await createImageBitmap(f);
+    const scale = Math.min(1, 2400 / bmp.width);
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85));
+    const res = await fetch("/api/image", { method: "POST", credentials: "same-origin", headers: { "content-type": "image/jpeg", "x-requested-with": "portfolio" }, body: blob });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Upload failed.");
+    state.content.profile.background = data.path; changed(true);
+    toast("Background updated in your draft. Publish to make it live.");
+  } catch (e) { toast(e.message || "That file couldn't be read as an image."); }
 }
 
 function hero(c) {
@@ -153,7 +179,7 @@ function hero(c) {
         p.location && h("li", {}, h("span", { class: "ck" }, "Based in"), h("span", {}, p.location, h("span", { class: "clock mono", "aria-label": "Local time" }))));
   return h("header", { class: "hero wrap" },
     field("h1", "profile.title", "text", { class: "name" }),
-    h("div", { class: "panel" }, waves(),
+    h("div", { class: "panel" }, panelBackground(p), state.editing && backgroundTools(p),
       h("div", { class: "panel-body" },
         h("section", { class: "panel-about", "aria-label": "About" }, h("h2", { class: "label" }, "About"), field("div", "profile.about", "paras", { class: "prose" })),
         h("section", { class: "panel-contact", id: "contact", "aria-label": "Contact" }, h("h2", { class: "label" }, "Contact"), contacts))));
@@ -175,12 +201,11 @@ function card(p, i) {
     field("p", `${base}.tag`, "text", { class: "card-tag" }),
     field("h3", `${base}.title`, "text"),
     field("p", `${base}.summary`, "text", { class: "card-sum" }),
-    field("ul", `${base}.facts`, "lines", { class: "facts", "data-placeholder": "Key facts, one per line" }),
   ];
   if (!state.editing) {
     return h("article", { class: "card clickable" }, ...body,
       h("button", { type: "button", class: "more bracket", "aria-haspopup": "dialog", onclick: () => openProject(i) },
-        "[ Context & method ]", h("span", { class: "sr" }, ` for ${p.title}`)));
+        "[ Open the project ]", h("span", { class: "sr" }, `: ${p.title}`)));
   }
   const last = state.content.projects.length - 1;
   return h("article", { class: "card" }, ...body,
@@ -230,13 +255,6 @@ function tick() {
 }
 setInterval(tick, 20000);
 
-function toggleTheme() {
-  const dark = document.documentElement.dataset.theme !== "dark";
-  document.documentElement.dataset.theme = dark ? "dark" : "light";
-  store.set("theme", dark ? "dark" : "light");
-  render();
-}
-
 // ---------- project dialog ----------
 function openProject(i) {
   state.openProject = i; renderProject(i);
@@ -272,7 +290,7 @@ $("#project").addEventListener("close", () => { state.openProject = -1; });
 
 // ---------- editing actions ----------
 function addProject() {
-  state.content.projects.push({ id: "p" + Date.now().toString(36), motif: "bars", tag: "Category", title: "New tool", summary: "One sentence on what it does.", facts: ["Key fact"], context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
+  state.content.projects.push({ id: "p" + Date.now().toString(36), motif: "bars", tag: "Category", title: "New tool", summary: "One sentence on what it does.", context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
   changed(true); openProject(state.content.projects.length - 1);
 }
 function moveProject(i, dir) { const a = state.content.projects; [a[i], a[i + dir]] = [a[i + dir], a[i]]; changed(true); }
@@ -384,7 +402,6 @@ async function loadDraft() {
 window.addEventListener("beforeunload", e => { if (state.saving) { saveDraft(); e.preventDefault(); } });
 
 (async function init() {
-  const t = store.get("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
   try {
     state.owner = (await call("/me")).owner;
     if (state.owner) { await loadDraft(); state.editing = true; } else await loadPublished();
