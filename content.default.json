@@ -1,0 +1,83 @@
+{
+  "profile": {
+    "name": "Hai Nguyen",
+    "headline": "Investor and operator who builds his own research tools.",
+    "location": "Vancouver, BC",
+    "summary": "Investment Associate at Openspace Capital, a Southeast Asia multi-stage venture fund with US$800M under management. Five years across corporate finance, start-up strategy and venture investing: I led Every Half Coffee's US$8M Series A, co-led Rize's US$31M Series B, structured a US$11M debt facility for smallholder rice farmers, and ran corporate finance analysis at Shopee.\n\nWharton economics graduate (finance concentration). I speak English, Vietnamese and Mandarin.",
+    "email": "haing.penn@gmail.com",
+    "phone": "+1 236 979 9494",
+    "linkedin": "https://www.linkedin.com/in/hai-n-13a45370/",
+    "github": "https://github.com/haing-dev"
+  },
+  "builder": {
+    "title": "What I build",
+    "intro": "Outside deal work, I build tools that answer questions I keep running into as an investor, using only public data. I set the question, the rules and the standard of evidence; Claude writes the code, and everything runs on a free stack of GitHub Actions and Cloudflare.\n\nEvery tool follows the same rules: each number traces back to a public source, nothing uses information that wasn't available at the time, and a rule stays only if the data supports it."
+  },
+  "projects": [
+    {
+      "id": "carbon",
+      "motif": "map",
+      "tag": "Climate markets",
+      "title": "Carbon Credit Atlas",
+      "summary": "A free map of carbon credit projects across every major registry, with who is buying them.",
+      "facts": ["~14,000 projects", "10+ registries and programmes", "Refreshed automatically"],
+      "context": "Carbon credit data is split across more than ten registries and programmes — Verra, Gold Standard, the UN's CDM, Global Carbon Council, UCR, Japan's JCM, Puro.earth, Isometric and Paris Agreement Article 6 — each with its own format. Buyers are mostly named only in press releases. Working on Rize's first carbon credit offtake, I had no single place to see which projects exist in a market, how much they have issued and who buys them.",
+      "objective": "One public, verifiable view of every project in a region: where it is, its credit type, stage and volumes, and its announced buyers. It started with Asia excluding mainland China and now covers every region.",
+      "methodology": [
+        "One collector per registry or programme. Each checks a cheap change signal first and downloads only what changed, on a schedule.",
+        "Records are normalised to one schema: country codes, a two-level credit-type taxonomy and project stages (listed, validated, issuing).",
+        "Projects listed in more than one registry are merged by fuzzy name matching, with hard checks on capacity, place and technology; borderline pairs go to a review queue.",
+        "Buyers come only from public announcements and registry retirement records, each with its source link. Nothing is inferred.",
+        "Every row links back to its registry record. An independent review of 300 random projects put keyword-tag precision at about 98%.",
+        "Runs at no cost: GitHub Actions collects the data and Cloudflare hosts the site."
+      ],
+      "url": "https://asia-carbon-atlas.pages.dev/",
+      "linkLabel": "Open the atlas"
+    },
+    {
+      "id": "biotech",
+      "motif": "crash",
+      "tag": "Biotech investing",
+      "title": "Biotech Crash Triage",
+      "summary": "Calls each US biotech stock that has just crashed a Buy candidate, Watch or Avoid, and backtests every call.",
+      "facts": ["~1,040 companies", "~4,000 episodes since 2020", "Every call backtested"],
+      "context": "When a biotech stock halves on trial news, specialist investors say some falls are deserved and some are not, but that judgement is tacit and rarely tested. Average post-crash returns hide the difference between a company with cash, committed funds and other programmes, and one about to raise money on harsh terms.",
+      "objective": "On the day a crash or slide is detected, give a rule-based call using only data that was public that day, and check every past call against what happened over the following year.",
+      "methodology": [
+        "Universe: every SEC pharma and biotech filer since 2021 (about 1,040 companies), including those later acquired or delisted, so there is no survivorship bias.",
+        "Two triggers: a crash (down 50% within 5 trading days, with a 25% news day) and a slide (30% below the 6-month high, with no 25% single-day fall).",
+        "Inputs from primary sources: SEC balance sheets, insider trades (Form 4), fund holdings (13F), offering documents, short interest and ClinicalTrials.gov. Claude reads each crash announcement, and every fact is checked against a verbatim quote.",
+        "No look-ahead: each input counts only from its public filing date, and an episode with incomplete inputs gets no call.",
+        "A rule is kept only if it holds in both halves of the history, in every entry year and under a company-clustered bootstrap. After July 2023, crash Buy candidates failed 46% of the time against 82% for Watch.",
+        "Returns are compared with the 10 most similar biotechs and the XBI index, and a public ledger timestamps each new call."
+      ],
+      "url": "https://crash-triage.haing-penn.workers.dev/",
+      "linkLabel": "Open the screener"
+    },
+    {
+      "id": "macro",
+      "motif": "gauge",
+      "tag": "Macro",
+      "title": "Macro Compass",
+      "summary": "Reads 28 public US signals to say where the economy, inflation and markets stand.",
+      "facts": ["28 signals", "3 readings", "History back to 1970"],
+      "context": "Macro calls are often made from a few remembered thresholds and anecdotes: one yield level, one indicator, one company's comments. The reading is rarely checked against history, and noisy monthly data makes it easy to change your mind too often.",
+      "objective": "One page that answers three questions — is the economy weakening, is inflation running hot, are markets under stress — and shows the evidence behind each answer.",
+      "methodology": [
+        "28 signals in three groups: 13 on the economy (the Sahm rule, the yield curve, truck tonnage, building permits, vehicle sales, sector leadership), 7 on inflation and 8 on market stress (VIX, credit spreads, the dollar, semiconductors).",
+        "Each signal has a warning zone set from its own history, shown on a long-run chart with US recessions shaded, plus whether it is better or worse than a year ago.",
+        "Each group's reading uses 6-month averages, and the economy reading changes only after 3 months in a row, so one noisy print can't flip it.",
+        "The three readings combine into an overall phase of the cycle, such as Recovery, with a plain-English line for every signal."
+      ],
+      "url": "https://macro-compass.haing-penn.workers.dev/",
+      "linkLabel": "Open the compass"
+    }
+  ],
+  "experience": [
+    { "org": "Openspace Capital", "role": "Investment Associate", "dates": "2026 – now", "note": "Venture and growth investments across Southeast Asia; led Every Half Coffee's US$8M Series A." },
+    { "org": "Rize", "role": "Strategy, Partnership & Business Development Manager", "dates": "2024 – 2026", "note": "Co-led the US$31M Series B; designed a US$11M smallholder debt facility; closed the first carbon credit offtake." },
+    { "org": "Shopee (Sea Group)", "role": "Senior Associate, Corporate Finance & Business Intelligence", "dates": "2021 – 2024", "note": "Financial models and forecasts for senior leadership; US$3.2M+ in cost savings." },
+    { "org": "Orbis Investment", "role": "Summer Analyst", "dates": "2019", "note": "Investment theses, models and due diligence for portfolio managers." },
+    { "org": "The Wharton School, University of Pennsylvania", "role": "BS in Economics, Finance", "dates": "2016 – 2020", "note": "Cum laude; full scholarships." }
+  ]
+}

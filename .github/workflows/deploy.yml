@@ -1,0 +1,49 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency: { group: deploy, cancel-in-progress: false }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Check secrets
+        run: |
+          for s in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            [ -n "${!s}" ] || { echo "::error::Repository secret $s is missing"; exit 1; }
+          done
+      - name: Find or create the content store (KV)
+        run: |
+          export CLOUDFLARE_API_TOKEN=$(echo -n "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')
+          API=https://api.cloudflare.com/client/v4/accounts/$(echo -n "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')/storage/kv/namespaces
+          AUTH="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          id=$(curl -s -H "$AUTH" "$API?per_page=100" | jq -r '.result[]? | select(.title=="hai-portfolio-content") | .id' | head -1)
+          if [ -z "$id" ]; then
+            id=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" -d '{"title":"hai-portfolio-content"}' "$API" | jq -r '.result.id // empty')
+            echo "::notice::Created KV namespace"
+          fi
+          [ -n "$id" ] || { echo "::error::Could not find or create the KV namespace. The Cloudflare token needs Workers KV Storage: Edit."; exit 1; }
+          sed -i "s/KV_ID_PLACEHOLDER/$id/" wrangler.toml
+      - name: Deploy
+        run: |
+          export CLOUDFLARE_API_TOKEN=$(echo -n "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')
+          export CLOUDFLARE_ACCOUNT_ID=$(echo -n "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')
+          npx -y wrangler@4 deploy 2>&1 | tee deploy.log
+          url=$(grep -o 'https://[a-z0-9.-]*workers\.dev' deploy.log | head -1)
+          echo "::notice::Live at $url"
+      - name: Set the owner password
+        env:
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          export CLOUDFLARE_API_TOKEN=$(echo -n "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')
+          export CLOUDFLARE_ACCOUNT_ID=$(echo -n "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')
+          if [ -z "$ADMIN_PASSWORD" ]; then echo "::warning::ADMIN_PASSWORD secret not set; sign-in is disabled until it is."; exit 0; fi
+          printf '%s' "$ADMIN_PASSWORD" | npx -y wrangler@4 secret put ADMIN_PASSWORD

@@ -1,0 +1,6 @@
+{
+  "name": "hai-portfolio",
+  "private": true,
+  "scripts": { "dev": "wrangler dev", "test": "node test/api.test.mjs" },
+  "devDependencies": { "wrangler": "^4" }
+}

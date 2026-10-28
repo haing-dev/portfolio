@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hai Nguyen</title>
+<meta name="description" content="Hai Nguyen: investor and operator. Portfolio of research tools built on public data.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
+<link rel="stylesheet" href="/style.css?v=1">
+</head>
+<body>
+<div id="app" aria-busy="true"></div>
+
+<dialog id="project" aria-labelledby="pd-title"></dialog>
+
+<dialog id="signin" class="small" aria-labelledby="si-title">
+  <form id="signin-form" method="dialog">
+    <h2 id="si-title">Owner sign in</h2>
+    <label>Email<input name="email" type="email" autocomplete="username" required></label>
+    <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+    <p class="form-error" role="alert"></p>
+    <div class="row-end">
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+      <button type="submit" class="btn solid">Sign in</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="history" class="small" aria-labelledby="hi-title">
+  <h2 id="hi-title">Published versions</h2>
+  <p class="hint">Restoring loads a version into your draft. Nothing changes on the live site until you publish.</p>
+  <ul class="history-list"></ul>
+  <div class="row-end"><button type="button" class="btn ghost" data-close>Close</button></div>
+</dialog>
+
+<dialog id="password" class="small" aria-labelledby="pw-title">
+  <form id="password-form" method="dialog">
+    <h2 id="pw-title">Change password</h2>
+    <label>Current password<input name="current" type="password" autocomplete="current-password" required></label>
+    <label>New password<input name="next" type="password" autocomplete="new-password" minlength="10" required></label>
+    <p class="form-error" role="alert"></p>
+    <div class="row-end">
+      <button type="button" class="btn ghost" data-close>Cancel</button>
+      <button type="submit" class="btn solid">Change password</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toolbar" hidden></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/app.js?v=1" defer></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+name = "hai-portfolio"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# The KV id is filled in by the deploy workflow (it creates the namespace on first deploy).
+[[kv_namespaces]]
+binding = "CONTENT"
+id = "KV_ID_PLACEHOLDER"
+
+[vars]
+ADMIN_EMAIL = "haing.wharton@gmail.com"
