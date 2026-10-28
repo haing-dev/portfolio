@@ -29,7 +29,8 @@
         "Runs at no cost: GitHub Actions collects the data and Cloudflare hosts the site."
       ],
       "url": "https://asia-carbon-atlas.pages.dev/",
-      "linkLabel": "Open the atlas"
+      "linkLabel": "Open the atlas",
+      "image": ""
     },
     {
       "id": "biotech",
@@ -48,7 +49,8 @@
         "Returns are compared with the 10 most similar biotechs and the XBI index, and a public ledger timestamps each new call."
       ],
       "url": "https://crash-triage.haing-penn.workers.dev/",
-      "linkLabel": "Open the screener"
+      "linkLabel": "Open the screener",
+      "image": ""
     },
     {
       "id": "macro",
@@ -65,7 +67,8 @@
         "The three readings combine into an overall phase of the cycle, such as Recovery, with a plain-English line for every signal."
       ],
       "url": "https://macro-compass.haing-penn.workers.dev/",
-      "linkLabel": "Open the compass"
+      "linkLabel": "Open the compass",
+      "image": ""
     }
   ],
   "experience": [

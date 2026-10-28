@@ -137,22 +137,24 @@ function topbar() {
 }
 
 function panelBackground(p) {
-  const src = /^\/api\/image\/[a-z0-9]+$/.test(p.background || "") ? p.background : null;
-  return src ? h("img", { class: "panel-img", src, alt: "", decoding: "async" }) : waves();
+  return isImg(p.background) ? h("img", { class: "panel-img", src: p.background, alt: "", decoding: "async" }) : waves();
 }
-function backgroundTools(p) {
-  const file = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp", class: "sr", "aria-label": "Background image" });
-  file.addEventListener("change", () => file.files[0] && uploadBackground(file.files[0]));
-  return h("div", { class: "bg-tools" }, file,
-    h("button", { type: "button", class: "tb-btn", onclick: () => file.click() }, p.background ? "[ Replace background ]" : "[ Upload background ]"),
-    p.background && h("button", { type: "button", class: "tb-btn danger", onclick: () => { p.background = ""; changed(true); } }, "[ Remove background ]"));
+// Upload / replace / remove controls for an image stored at obj[key]; noun is what the buttons call it.
+function imageTools(obj, key, noun, maxWidth, cls) {
+  const file = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp", class: "sr", "aria-label": `${noun} image` });
+  file.addEventListener("change", () => file.files[0] && uploadImage(file.files[0], maxWidth, path => { obj[key] = path; }, noun));
+  return h("div", { class: cls }, file,
+    h("button", { type: "button", class: "tb-btn", onclick: e => { e.stopPropagation(); file.click(); } }, obj[key] ? `[ Replace ${noun} ]` : `[ Upload ${noun} ]`),
+    obj[key] && h("button", { type: "button", class: "tb-btn danger", onclick: e => { e.stopPropagation(); obj[key] = ""; changed(true); } }, `[ Remove ${noun} ]`));
 }
-// Shrink large photos in the browser before upload (max 2400 px wide, JPEG).
-async function uploadBackground(f) {
+const isImg = (v) => /^\/api\/image\/[a-z0-9]+$/.test(v || "");
+
+// Shrink large photos in the browser before upload (JPEG, at most maxWidth px wide).
+async function uploadImage(f, maxWidth, apply, noun) {
   try {
-    toast("Uploading background…");
+    toast(`Uploading ${noun}…`);
     const bmp = await createImageBitmap(f);
-    const scale = Math.min(1, 2400 / bmp.width);
+    const scale = Math.min(1, maxWidth / bmp.width);
     const cv = document.createElement("canvas");
     cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
@@ -160,8 +162,8 @@ async function uploadBackground(f) {
     const res = await fetch("/api/image", { method: "POST", credentials: "same-origin", headers: { "content-type": "image/jpeg", "x-requested-with": "portfolio" }, body: blob });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Upload failed.");
-    state.content.profile.background = data.path; changed(true);
-    toast("Background updated in your draft. Publish to make it live.");
+    apply(data.path); changed(true);
+    toast(`${noun[0].toUpperCase() + noun.slice(1)} updated in your draft. Publish to make it live.`);
   } catch (e) { toast(e.message || "That file couldn't be read as an image."); }
 }
 
@@ -179,7 +181,7 @@ function hero(c) {
         p.location && h("li", {}, h("span", { class: "ck" }, "Based in"), h("span", {}, p.location, h("span", { class: "clock mono", "aria-label": "Local time" }))));
   return h("header", { class: "hero wrap" },
     field("h1", "profile.title", "text", { class: "name" }),
-    h("div", { class: "panel" }, panelBackground(p), state.editing && backgroundTools(p),
+    h("div", { class: "panel" }, panelBackground(p), state.editing && imageTools(p, "background", "background", 2400, "bg-tools"),
       h("div", { class: "panel-body" },
         h("section", { class: "panel-about", "aria-label": "About" }, h("h2", { class: "label" }, "About"), field("div", "profile.about", "paras", { class: "prose" })),
         h("section", { class: "panel-contact", id: "contact", "aria-label": "Contact" }, h("h2", { class: "label" }, "Contact"), contacts))));
@@ -197,7 +199,9 @@ function work(c) {
 function card(p, i) {
   const base = `projects.${i}`;
   const body = [
-    h("div", { class: "motif" }, (MOTIFS[p.motif] || MOTIFS.bars)()),
+    h("div", { class: "motif" + (isImg(p.image) ? " has-img" : "") },
+      isImg(p.image) ? h("img", { src: p.image, alt: "", loading: "lazy", decoding: "async" }) : (MOTIFS[p.motif] || MOTIFS.bars)(),
+      state.editing && imageTools(p, "image", "picture", 1600, "img-tools")),
     field("p", `${base}.tag`, "text", { class: "card-tag" }),
     field("h3", `${base}.title`, "text"),
     field("p", `${base}.summary`, "text", { class: "card-sum" }),
@@ -290,7 +294,7 @@ $("#project").addEventListener("close", () => { state.openProject = -1; });
 
 // ---------- editing actions ----------
 function addProject() {
-  state.content.projects.push({ id: "p" + Date.now().toString(36), motif: "bars", tag: "Category", title: "New tool", summary: "One sentence on what it does.", context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
+  state.content.projects.push({ id: "p" + Date.now().toString(36), motif: "bars", image: "", tag: "Category", title: "New tool", summary: "One sentence on what it does.", context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
   changed(true); openProject(state.content.projects.length - 1);
 }
 function moveProject(i, dir) { const a = state.content.projects; [a[i], a[i + dir]] = [a[i + dir], a[i]]; changed(true); }

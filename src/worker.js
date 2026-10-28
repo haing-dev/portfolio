@@ -126,6 +126,7 @@ function validate(c) {
   for (const p of c.projects) {
     if (!p || typeof p !== "object" || !p.id) return "Each project needs an id.";
     if (p.url && !SAFE_URL.test(p.url)) return `The link for "${p.title}" must start with https://.`;
+    if (p.image && !IMAGE_PATH.test(p.image)) return `The picture for "${p.title}" must be an uploaded image.`;
   }
   for (const k of ["linkedin", "github"]) if (c.profile[k] && !SAFE_URL.test(c.profile[k])) return `The ${k} link must start with https://.`;
   if (c.profile.background && !IMAGE_PATH.test(c.profile.background)) return "The background must be an uploaded image.";

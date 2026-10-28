@@ -41,6 +41,9 @@ const got = await fetch(BASE + uj.path); assert.equal(got.status, 200); assert.e
 up = await fetch(BASE + "/api/image", { method: "POST", headers: { "content-type": "image/svg+xml", "x-requested-with": "portfolio", cookie: jar }, body: "<svg/>" }); assert.equal(up.status, 400, "svg rejected");
 const d2 = (await call("/draft")).data.content; d2.profile.background = "https://evil.example/x.png";
 assert.equal((await call("/draft", { method: "PUT", body: { content: d2 } })).status, 400, "external background rejected");
+d2.projects[0].image = "https://evil.example/x.png";
+assert.equal((await call("/draft", { method: "PUT", body: { content: d2 } })).status, 400, "external project picture rejected");
+d2.projects[0].image = uj.path;
 d2.profile.background = uj.path; assert.equal((await call("/draft", { method: "PUT", body: { content: d2 } })).status, 200);
 await call("/discard", { method: "POST" }); await call("/logout", { method: "POST" });
 up = await fetch(BASE + "/api/image", { method: "POST", headers: { "content-type": "image/png", "x-requested-with": "portfolio" }, body: png }); assert.equal(up.status, 401, "upload needs sign-in");

@@ -92,7 +92,12 @@ button { font: inherit; color: inherit; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 40px 28px; }
 .card { position: relative; display: flex; flex-direction: column; border-top: 1px solid var(--ink); padding-top: 16px; }
 .motif { background: var(--panel); aspect-ratio: 16 / 9; display: grid; place-items: center; margin-bottom: 18px; overflow: hidden; }
+.motif { position: relative; }
 .motif svg { width: 86%; height: auto; }
+.motif.has-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.card.clickable .motif img { transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+.card.clickable:hover .motif img { transform: scale(1.04); }
+.img-tools { position: absolute; left: 10px; right: 10px; bottom: 10px; justify-content: space-between; z-index: 2; display: flex; flex-wrap: wrap; gap: 4px 14px; background: var(--bg); padding: 2px 10px; }
 .card.clickable .motif svg { transition: transform .5s cubic-bezier(.2,.7,.2,1); }
 .card.clickable:hover .motif svg { transform: scale(1.04); }
 .m-dots circle { fill: var(--teal); fill-opacity: .35; stroke: var(--teal); stroke-width: 1; }
