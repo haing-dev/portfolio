@@ -3,7 +3,7 @@
 Live: https://hai-portfolio.haing-penn.workers.dev (Cloudflare Worker `hai-portfolio`).
 
 ## How it works
-- `public/` — the page (`index.html`, `app.js`, `style.css`). `src/worker.js` — serves it plus `/api/*`.
+- `public/` — the page (`index.html`, `app.js`, `style.css`, self-hosted OFL fonts in `fonts/`). `src/worker.js` — serves it plus `/api/*`.
 - **Wording lives in Cloudflare KV, not in code** (namespace `hai-portfolio-content`): `published` (live), `draft`
   (owner's working copy), `history` (last 20 published versions). Deploying code never overwrites it.
 - `content.default.json` only seeds an empty store and fills in fields a newer code version adds. Changing a value

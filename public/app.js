@@ -15,7 +15,6 @@ function h(tag, attrs = {}, ...kids) {
     if (v == null || v === false) continue;
     if (k === "class") el.className = v;
     else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
-    else if (k === "text") el.textContent = v;
     else el.setAttribute(k, v === true ? "" : v);
   }
   for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(kid));
@@ -26,15 +25,15 @@ const safeUrl = (u) => (/^(https?:\/\/|mailto:|tel:)/i.test(u || "") ? u : null)
 function getPath(obj, path) { return path.split(".").reduce((o, k) => (o == null ? o : o[k]), obj); }
 function setPath(obj, path, value) {
   const keys = path.split("."); const last = keys.pop();
-  const target = keys.reduce((o, k) => o[k], obj); target[last] = value;
+  keys.reduce((o, k) => o[k], obj)[last] = value;
 }
 const paras = (s) => String(s || "").split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
 const lines = (a) => (Array.isArray(a) ? a : String(a || "").split("\n")).map(t => t.trim()).filter(Boolean);
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 
 async function call(path, opts = {}) {
   const res = await fetch("/api" + path, {
-    method: opts.method || "GET",
-    credentials: "same-origin",
+    method: opts.method || "GET", credentials: "same-origin",
     headers: { "content-type": "application/json", "x-requested-with": "portfolio" },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
@@ -47,7 +46,7 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2600);
 }
 
-// ---------- editable text ----------
+// ---------- editable fields ----------
 // kind: "text" (one line), "paras" (blank line between paragraphs), "lines" (one item per line)
 const PLAIN = (() => { const d = document.createElement("div"); d.contentEditable = "plaintext-only"; return d.contentEditable === "plaintext-only"; })();
 
@@ -62,8 +61,7 @@ function field(tag, path, kind = "text", attrs = {}) {
   const el = h(tag === "ul" || tag === "ol" ? "div" : tag, {
     ...attrs, class: `${attrs.class || ""} editable ${kind !== "text" ? "multi" : ""}`.trim(),
     contenteditable: PLAIN ? "plaintext-only" : "true", spellcheck: "true",
-    "data-placeholder": attrs["data-placeholder"] || "Empty",
-    "aria-label": attrs["aria-label"] || path,
+    "data-placeholder": attrs["data-placeholder"] || "Empty", "aria-label": attrs["aria-label"] || path,
   }, raw);
   el.addEventListener("input", () => {
     const text = el.innerText.replace(/ /g, " ");
@@ -74,180 +72,242 @@ function field(tag, path, kind = "text", attrs = {}) {
   el.addEventListener("click", e => e.stopPropagation());
   return el;
 }
-function urlInput(path, label) {
-  const inp = h("input", { type: "url", value: getPath(state.content, path) || "", placeholder: "https://…", "aria-label": label });
+function input(path, label, type = "text") {
+  const inp = h("input", { type, value: getPath(state.content, path) || "", "aria-label": label, placeholder: type === "url" ? "https://…" : "" });
   inp.addEventListener("input", () => { setPath(state.content, path, inp.value.trim()); changed(); });
-  return h("label", { class: "url-edit" }, h("span", {}, label), inp);
+  return h("label", { class: "inline-edit" }, h("span", {}, label), inp);
 }
-function textInput(path, label, type = "text") {
-  const inp = h("input", { type, value: getPath(state.content, path) || "", "aria-label": label });
-  inp.addEventListener("input", () => { setPath(state.content, path, inp.value.trim()); changed(); });
-  return h("label", { class: "url-edit" }, h("span", {}, label), inp);
+const removeBtn = (onclick, label = "Remove") => h("button", { type: "button", class: "tb-btn danger", onclick }, `[ ${label} ]`);
+
+// ---------- drawings ----------
+// Seeded random numbers so the hero drawing is the same on every visit.
+function rng(seed) { return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296); }
+
+function heroArt() {
+  const W = 1200, H = 440, r = rng(20261028), paths = [];
+  const N = 46, start = 70, mid = 560;
+  for (let i = 0; i < N; i++) {
+    let y = H * 0.5 + (r() - 0.5) * 24, d = `M0 ${y.toFixed(1)}`;
+    // the three highlighted paths take a clear up / flat / down route after the decision point
+    const drift = i === 11 ? -2.4 : i === 27 ? 2.2 : i === 3 ? -0.2 : (r() - 0.5) * 5, vol = 4 + r() * 8;
+    for (let x = 12; x <= W; x += 12) {
+      if (x > mid - 12 && x <= mid) y = H / 2 + (y - H / 2) * 0.3;   // paths pinch together at the decision point
+      y += x < mid ? (H / 2 - y) * 0.06 + (r() - 0.5) * vol * 0.7 : drift + (r() - 0.5) * vol;
+      y = Math.max(18, Math.min(H - 18, y));
+      d += ` L${x} ${y.toFixed(1)}`;
+    }
+    const cls = i === 3 ? "hp-gold" : i === 11 ? "hp-teal" : i === 27 ? "hp-red" : "hp";
+    paths.push(`<path class="${cls}" d="${d}"/>`);
+  }
+  const grid = [...Array(9)].map((_, i) => `<line class="hg" x1="0" x2="${W}" y1="${(i + 1) * H / 10}" y2="${(i + 1) * H / 10}"/>`).join("")
+    + [...Array(11)].map((_, i) => `<line class="hg" y1="0" y2="${H}" x1="${(i + 1) * W / 12}" x2="${(i + 1) * W / 12}"/>`).join("");
+  return svg(`<svg class="hero-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Abstract chart of many price paths fanning out from one point">
+    <defs><radialGradient id="glow" cx="47%" cy="50%" r="60%"><stop offset="0" stop-color="#2b4a6f" stop-opacity=".55"/><stop offset="1" stop-color="#2b4a6f" stop-opacity="0"/></radialGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#glow)"/>${grid}<line class="hv" x1="${mid}" x2="${mid}" y1="0" y2="${H}"/>${paths.join("")}
+    <circle class="hdot" cx="${mid}" cy="${H / 2}" r="4"/></svg>`);
 }
 
-// ---------- project motifs (small drawings, one per project type) ----------
 const MOTIFS = {
-  map: () => svg(`<svg viewBox="0 0 320 120" aria-hidden="true"><g class="m-dots">${
-    [[42,30,5],[70,44,9],[96,38,4],[120,64,14],[150,52,6],[176,78,11],[198,60,4],[214,90,18],[246,72,7],[266,96,5],[286,58,9],[134,92,3],[88,74,6],[230,40,3]]
+  map: () => svg(`<svg viewBox="0 0 320 150" aria-hidden="true"><g class="m-dots">${
+    [[42,40,5],[70,54,9],[96,48,4],[120,78,15],[150,62,6],[176,96,11],[198,72,4],[214,108,19],[246,86,7],[266,116,5],[286,70,9],[134,112,3],[88,92,6],[230,50,3],[58,100,4],[160,36,3]]
       .map(([x,y,r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join("")}</g></svg>`),
-  crash: () => svg(`<svg viewBox="0 0 320 120" aria-hidden="true">
-    <path class="m-line" d="M10 34 L40 30 L62 36 L84 28 L104 33 L120 30 L132 86 L146 92"/>
-    <path class="m-up" d="M146 92 C190 80 220 52 310 30"/>
-    <path class="m-flat" d="M146 92 C200 90 250 86 310 82"/>
-    <path class="m-down" d="M146 92 C200 100 250 108 310 114"/>
-    <circle class="m-pt" cx="132" cy="86" r="4"/></svg>`),
-  gauge: () => svg(`<svg viewBox="0 0 320 120" aria-hidden="true">${
+  crash: () => svg(`<svg viewBox="0 0 320 150" aria-hidden="true">
+    <path class="m-line" d="M14 40 L40 36 L62 42 L84 32 L104 38 L120 34 L132 100 L146 106"/>
+    <path class="m-up" d="M146 106 C190 92 220 62 306 36"/>
+    <path class="m-flat" d="M146 106 C200 104 250 100 306 96"/>
+    <path class="m-down" d="M146 106 C200 116 250 126 306 136"/>
+    <circle class="m-pt" cx="132" cy="100" r="4"/></svg>`),
+  gauge: () => svg(`<svg viewBox="0 0 320 150" aria-hidden="true">${
     [[62,0.72],[160,0.38],[258,0.2]].map(([cx,v]) => {
-      const a = Math.PI * (1 - v), x = cx + 38 * Math.cos(a), y = 92 - 38 * Math.sin(a);
-      return `<path class="m-arc" d="M${cx-46} 92 A46 46 0 0 1 ${cx+46} 92"/><line class="m-needle" x1="${cx}" y1="92" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/><circle class="m-pt" cx="${cx}" cy="92" r="3.5"/>`;
+      const a = Math.PI * (1 - v), x = cx + 36 * Math.cos(a), y = 108 - 36 * Math.sin(a);
+      return `<path class="m-arc" d="M${cx-44} 108 A44 44 0 0 1 ${cx+44} 108"/><line class="m-needle" x1="${cx}" y1="108" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/><circle class="m-pt" cx="${cx}" cy="108" r="3"/>`;
     }).join("")}</svg>`),
-  bars: () => svg(`<svg viewBox="0 0 320 120" aria-hidden="true">${
-    [40,64,52,88,70,96,58,80].map((v,i) => `<rect class="m-bar" x="${24+i*36}" y="${110-v}" width="22" height="${v}" rx="2"/>`).join("")}</svg>`),
+  bars: () => svg(`<svg viewBox="0 0 320 150" aria-hidden="true">${
+    [40,64,52,88,70,96,58,80].map((v,i) => `<rect class="m-bar" x="${26+i*36}" y="${130-v}" width="20" height="${v}"/>`).join("")}</svg>`),
 };
+const MOTIF_NAMES = { map: "Map dots", crash: "Crash and outcomes", gauge: "Three dials", bars: "Bars" };
 
 // ---------- render ----------
 function render() {
-  const c = state.content, app = $("#app");
+  const c = state.content;
   document.body.classList.toggle("editing", state.editing);
-  app.replaceChildren(heroSection(c), buildSection(c), expSection(c), footer(c));
-  app.removeAttribute("aria-busy");
+  $("#app").replaceChildren(topbar(c), hero(c), work(c), about(c), experience(c), education(c), contact(c), footer(c));
+  $("#app").removeAttribute("aria-busy");
   document.title = c.profile.name || "Portfolio";
-  renderToolbar();
+  renderToolbar(); tick();
   if (state.openProject >= 0 && $("#project").open) renderProject(state.openProject);
 }
 
-function heroSection(c) {
-  const p = c.profile;
-  const contacts = state.editing
-    ? h("div", { class: "contact-edit" },
-        textInput("profile.email", "Email", "email"), textInput("profile.phone", "Phone"),
-        urlInput("profile.linkedin", "LinkedIn"), urlInput("profile.github", "GitHub"), textInput("profile.location", "Location"))
-    : h("ul", { class: "contact" },
-        p.email && h("li", {}, h("span", {}, "Email"), h("a", { href: "mailto:" + p.email }, p.email)),
-        p.phone && h("li", {}, h("span", {}, "Phone"), h("a", { href: "tel:" + p.phone.replace(/[^\d+]/g, "") }, p.phone)),
-        safeUrl(p.linkedin) && h("li", {}, h("span", {}, "LinkedIn"), h("a", { href: p.linkedin, target: "_blank", rel: "noopener" }, "linkedin.com/in/" + (p.linkedin.split("/in/")[1] || "").replace(/\/$/, ""))),
-        safeUrl(p.github) && h("li", {}, h("span", {}, "GitHub"), h("a", { href: p.github, target: "_blank", rel: "noopener" }, p.github.replace(/^https?:\/\/(www\.)?/, ""))),
-        p.location && h("li", {}, h("span", {}, "Based in"), h("b", {}, p.location)));
-  return h("header", { class: "hero wrap" },
-    h("div", { class: "hero-main" },
-      field("h1", "profile.name", "text", { class: "name" }),
-      field("p", "profile.headline", "text", { class: "headline" }),
-      field("div", "profile.summary", "paras", { class: "summary prose" })),
-    h("aside", { class: "hero-side" }, contacts));
+function topbar(c) {
+  const dark = document.documentElement.dataset.theme === "dark";
+  return h("nav", { class: "topbar wrap", "aria-label": "Page" },
+    h("div", { class: "tb-left" },
+      h("a", { class: "bracket", href: "#about" }, "[ About ]"),
+      h("a", { class: "bracket", href: "#work" }, "[ Tools ]"),
+      h("a", { class: "bracket", href: "#contact" }, "[ Contact ]"),
+      h("button", { type: "button", class: "bracket", "aria-pressed": String(dark), onclick: toggleTheme }, dark ? "[ Light mode ]" : "[ Dark mode ]")),
+    h("div", { class: "tb-right" }, field("span", "profile.role", "text"), field("span", "profile.location", "text")));
 }
 
-function buildSection(c) {
+function hero(c) {
+  return h("header", { class: "hero wrap" },
+    h("div", { class: "hero-head" },
+      field("p", "work.label", "text", { class: "kicker" }),
+      h("div", { class: "name-block" },
+        field("p", "profile.tagline", "text", { class: "tagline" }),
+        field("h1", "profile.name", "text", { class: "name" }))),
+    h("div", { class: "hero-panel" }, heroArt()));
+}
+
+const section = (id, label, ...body) =>
+  h("section", { class: "sec wrap", id, "aria-labelledby": `${id}-h` }, h("h2", { class: "label", id: `${id}-h` }, label), h("div", { class: "sec-body" }, ...body));
+
+function work(c) {
   const cards = c.projects.map((p, i) => card(p, i));
-  if (state.editing) cards.push(h("button", { class: "card add", type: "button", onclick: addProject }, h("span", {}, "+ Add project")));
-  return h("section", { class: "build wrap", "aria-labelledby": "build-title" },
-    h("div", { class: "build-head" },
-      field("h2", "builder.title", "text", { id: "build-title" }),
-      field("div", "builder.intro", "paras", { class: "prose intro" })),
+  if (state.editing) cards.push(h("button", { class: "card add", type: "button", onclick: addProject }, "[ + Add tool ]"));
+  return section("work", "Tools",
+    field("p", "work.intro", "text", { class: "lede" }),
     h("div", { class: "grid" }, cards));
 }
 
 function card(p, i) {
   const base = `projects.${i}`;
-  const motif = (MOTIFS[p.motif] || MOTIFS.bars)();
-  const body = h("div", { class: "card-body" },
-    field("p", `${base}.tag`, "text", { class: "tag" }),
+  const body = [
+    h("div", { class: "motif" }, (MOTIFS[p.motif] || MOTIFS.bars)()),
+    field("p", `${base}.tag`, "text", { class: "card-tag" }),
     field("h3", `${base}.title`, "text"),
     field("p", `${base}.summary`, "text", { class: "card-sum" }),
-    field("ul", `${base}.facts`, "lines", { class: "facts", "data-placeholder": "Key facts, one per line" }));
+    field("ul", `${base}.facts`, "lines", { class: "facts", "data-placeholder": "Key facts, one per line" }),
+  ];
   if (!state.editing) {
-    return h("article", { class: "card clickable" },
-      h("div", { class: "motif" }, motif), body,
-      h("button", { type: "button", class: "more", "aria-haspopup": "dialog", onclick: () => openProject(i) },
-        "Context, objective and method", h("span", { class: "sr" }, ` for ${p.title}`)));
+    return h("article", { class: "card clickable" }, ...body,
+      h("button", { type: "button", class: "more bracket", "aria-haspopup": "dialog", onclick: () => openProject(i) },
+        "[ Context & method ]", h("span", { class: "sr" }, ` for ${p.title}`)));
   }
-  return h("article", { class: "card" },
-    h("div", { class: "motif" }, motif), body,
+  const last = state.content.projects.length - 1;
+  return h("article", { class: "card" }, ...body,
     h("div", { class: "card-tools" },
-      h("button", { type: "button", class: "btn small", onclick: () => openProject(i) }, "Edit details"),
-      h("button", { type: "button", class: "btn small ghost", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "←"),
-      h("button", { type: "button", class: "btn small ghost", disabled: i === state.content.projects.length - 1, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "→"),
-      h("button", { type: "button", class: "btn small danger", onclick: () => deleteProject(i) }, "Delete")));
+      h("button", { type: "button", class: "tb-btn", onclick: () => openProject(i) }, "[ Edit details ]"),
+      h("button", { type: "button", class: "tb-btn", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "[ ← ]"),
+      h("button", { type: "button", class: "tb-btn", disabled: i === last, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "[ → ]"),
+      removeBtn(() => deleteProject(i), "Delete")));
 }
 
-function expSection(c) {
-  const rows = c.experience.map((e, i) => h("li", { class: "exp-row" },
-    field("span", `experience.${i}.dates`, "text", { class: "dates" }),
-    h("div", {},
-      h("p", { class: "exp-title" }, field("span", `experience.${i}.org`, "text", { class: "org" }), h("span", { class: "sep" }, ", "), field("span", `experience.${i}.role`, "text")),
-      field("p", `experience.${i}.note`, "text", { class: "note" })),
-    state.editing && h("button", { type: "button", class: "btn small danger", onclick: () => { c.experience.splice(i, 1); changed(true); } }, "Delete")));
-  return h("section", { class: "exp wrap", "aria-labelledby": "exp-title" },
-    h("h2", { id: "exp-title" }, "Experience"),
-    h("ol", { class: "exp-list" }, rows),
-    state.editing && h("button", { type: "button", class: "btn small", onclick: () => { c.experience.push({ org: "Organisation", role: "Role", dates: "Year", note: "" }); changed(true); } }, "+ Add row"));
+function about(c) {
+  return section("about", "About",
+    field("div", "profile.about", "paras", { class: "prose" }),
+    field("p", "profile.motto", "text", { class: "motto" }));
+}
+
+function experience(c) {
+  const rows = c.experience.map((e, i) => {
+    const b = `experience.${i}`;
+    return h("li", { class: "xrow" },
+      h("div", { class: "x-org" }, field("p", `${b}.org`, "text", { class: "org" }), field("p", `${b}.dates`, "text", { class: "mono" })),
+      field("p", `${b}.role`, "text", { class: "x-role" }),
+      h("div", { class: "x-note" }, field("p", `${b}.note`, "text"), state.editing && removeBtn(() => { c.experience.splice(i, 1); changed(true); })));
+  });
+  return section("experience", "Experience", h("ol", { class: "xlist" }, rows),
+    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.experience.push({ org: "Organisation", dates: "Year", role: "Role", note: "" }); changed(true); } }, "[ + Add role ]"));
+}
+
+function education(c) {
+  const rows = c.education.map((e, i) => {
+    const b = `education.${i}`;
+    return h("li", { class: "erow" },
+      h("div", {}, field("p", `${b}.degree`, "text", { class: "org" }), field("p", `${b}.school`, "text", { class: "muted" }),
+        field("p", `${b}.note`, "text", { class: "muted small", "data-placeholder": "Note (optional)" })),
+      h("div", { class: "e-side" }, field("p", `${b}.dates`, "text", { class: "mono" }), state.editing && removeBtn(() => { c.education.splice(i, 1); changed(true); })));
+  });
+  return section("education", "Education", h("ol", { class: "elist" }, rows),
+    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.education.push({ degree: "Degree", school: "School", dates: "Years", note: "" }); changed(true); } }, "[ + Add school ]"));
+}
+
+function contact(c) {
+  const p = c.profile;
+  const links = state.editing
+    ? h("div", { class: "contact-edit" }, input("profile.email", "Email", "email"), input("profile.phone", "Phone"),
+        input("profile.linkedin", "LinkedIn", "url"), input("profile.github", "GitHub", "url"), input("profile.timezone", "Time zone (for the clock)"))
+    : h("ul", { class: "clist" },
+        p.email && h("li", {}, h("a", { href: "mailto:" + p.email }, p.email)),
+        p.phone && h("li", {}, h("a", { href: "tel:" + p.phone.replace(/[^\d+]/g, "") }, p.phone)),
+        safeUrl(p.linkedin) && h("li", {}, h("a", { href: p.linkedin, target: "_blank", rel: "noopener" }, "LinkedIn", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
+        safeUrl(p.github) && h("li", {}, h("a", { href: p.github, target: "_blank", rel: "noopener" }, "GitHub", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))));
+  return section("contact", "Contact",
+    h("div", { class: "contact-grid" }, links,
+      h("div", { class: "where" }, h("p", {}, p.location), h("p", { class: "mono clock", "aria-label": "Local time" }))));
 }
 
 function footer(c) {
   return h("footer", { class: "foot wrap" },
-    h("span", {}, `© ${new Date().getFullYear()} ${c.profile.name}`),
+    h("span", { class: "mono" }, `© ${new Date().getFullYear()} ${c.profile.name}`),
     state.owner
-      ? h("button", { type: "button", class: "link", onclick: () => setEditing(!state.editing) }, state.editing ? "Preview as visitor" : "Edit site")
-      : h("button", { type: "button", class: "link", onclick: openSignin }, "Owner sign in"));
+      ? h("button", { type: "button", class: "bracket", onclick: () => setEditing(!state.editing) }, state.editing ? "[ Preview as visitor ]" : "[ Edit site ]")
+      : h("button", { type: "button", class: "bracket", onclick: openSignin }, "[ Owner sign in ]"));
+}
+
+function tick() {
+  const el = $(".clock"); if (!el) return;
+  try { el.textContent = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: state.content.profile.timezone || "America/Vancouver" }); }
+  catch { el.textContent = ""; }
+}
+setInterval(tick, 20000);
+
+function toggleTheme() {
+  const dark = document.documentElement.dataset.theme !== "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  store.set("theme", dark ? "dark" : "light");
+  render();
 }
 
 // ---------- project dialog ----------
 function openProject(i) {
-  state.openProject = i;
-  renderProject(i);
-  const d = $("#project");
-  if (!d.open) d.showModal();
+  state.openProject = i; renderProject(i);
+  const d = $("#project"); if (!d.open) d.showModal();
 }
 function renderProject(i) {
   const p = state.content.projects[i], base = `projects.${i}`, d = $("#project");
   if (!p) { d.close(); return; }
   const link = safeUrl(p.url);
-  const editLinks = state.editing && h("div", { class: "pd-edit" },
-    urlInput(`${base}.url`, "Dashboard link"),
-    (() => {
-      const sel = h("select", { "aria-label": "Drawing" }, ...Object.keys(MOTIFS).map(k => h("option", { value: k, selected: p.motif === k }, { map: "Map dots", crash: "Crash and outcomes", gauge: "Three dials", bars: "Bars" }[k])));
-      sel.addEventListener("change", () => { p.motif = sel.value; changed(true); });
-      return h("label", { class: "url-edit" }, h("span", {}, "Card drawing"), sel);
-    })());
-  d.replaceChildren(
-    h("div", { class: "pd" },
-      h("button", { type: "button", class: "x", "aria-label": "Close", onclick: () => d.close() }, "×"),
-      field("p", `${base}.tag`, "text", { class: "tag" }),
-      field("h2", `${base}.title`, "text", { id: "pd-title" }),
-      field("p", `${base}.summary`, "text", { class: "pd-sum" }),
-      h("div", { class: "pd-grid" },
-        h("section", {}, h("h3", {}, "Context"), field("div", `${base}.context`, "paras", { class: "prose" })),
-        h("section", {}, h("h3", {}, "Objective"), field("div", `${base}.objective`, "paras", { class: "prose" }))),
-      h("section", { class: "pd-method" }, h("h3", {}, "Methodology"), state.editing && h("p", { class: "edit-hint" }, "One bullet per line."), field("ul", `${base}.methodology`, "lines", { class: "method", "data-placeholder": "One step per line" })),
-      editLinks,
-      h("div", { class: "pd-foot" },
-        state.editing
-          ? field("span", `${base}.linkLabel`, "text", { class: "btn solid fake" })
-          : link && h("a", { class: "btn solid", href: link, target: "_blank", rel: "noopener" }, p.linkLabel || "Open the dashboard"),
-        link && h("span", { class: "pd-url" }, link.replace(/^https?:\/\//, "").replace(/\/$/, "")))));
+  const row = (label, el, extra) => h("div", { class: "pd-row" }, h("h3", { class: "label" }, label), h("div", {}, extra, el));
+  d.replaceChildren(h("div", { class: "pd" },
+    h("div", { class: "pd-top" }, field("p", `${base}.tag`, "text", { class: "kicker" }),
+      h("button", { type: "button", class: "bracket", "aria-label": "Close", onclick: () => d.close() }, "[ Close ]")),
+    field("h2", `${base}.title`, "text", { id: "pd-title", class: "pd-title" }),
+    field("p", `${base}.summary`, "text", { class: "pd-sum" }),
+    row("Context", field("div", `${base}.context`, "paras", { class: "prose" })),
+    row("Objective", field("div", `${base}.objective`, "paras", { class: "prose" })),
+    row("Methodology", field("ul", `${base}.methodology`, "lines", { class: "method", "data-placeholder": "One step per line" }),
+      state.editing && h("p", { class: "edit-hint" }, "One bullet per line.")),
+    state.editing && row("Settings", h("div", { class: "pd-edit" }, input(`${base}.url`, "Dashboard link", "url"),
+      (() => {
+        const sel = h("select", { "aria-label": "Card drawing" }, ...Object.keys(MOTIFS).map(k => h("option", { value: k, selected: p.motif === k }, MOTIF_NAMES[k])));
+        sel.addEventListener("change", () => { p.motif = sel.value; changed(true); });
+        return h("label", { class: "inline-edit" }, h("span", {}, "Card drawing"), sel);
+      })())),
+    h("div", { class: "pd-foot" },
+      state.editing ? field("span", `${base}.linkLabel`, "text", { class: "btn" })
+        : link && h("a", { class: "btn", href: link, target: "_blank", rel: "noopener" }, p.linkLabel || "Open the dashboard", h("span", { "aria-hidden": "true" }, " ↗")),
+      link && h("span", { class: "mono muted" }, link.replace(/^https?:\/\//, "").replace(/\/$/, "")))));
 }
 $("#project").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 $("#project").addEventListener("close", () => { state.openProject = -1; });
 
 // ---------- editing actions ----------
 function addProject() {
-  const id = "p" + Date.now().toString(36);
-  state.content.projects.push({ id, motif: "bars", tag: "Category", title: "New project", summary: "One sentence on what it does.", facts: ["Key fact"], context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
-  changed(true);
-  openProject(state.content.projects.length - 1);
+  state.content.projects.push({ id: "p" + Date.now().toString(36), motif: "bars", tag: "Category", title: "New tool", summary: "One sentence on what it does.", facts: ["Key fact"], context: "", objective: "", methodology: [], url: "", linkLabel: "Open the dashboard" });
+  changed(true); openProject(state.content.projects.length - 1);
 }
-function moveProject(i, dir) {
-  const a = state.content.projects; [a[i], a[i + dir]] = [a[i + dir], a[i]]; changed(true);
-}
+function moveProject(i, dir) { const a = state.content.projects; [a[i], a[i + dir]] = [a[i + dir], a[i]]; changed(true); }
 function deleteProject(i) {
-  if (!confirm(`Delete "${state.content.projects[i].title}" from the draft? You can bring it back with Discard changes until you publish.`)) return;
+  if (!confirm(`Delete "${state.content.projects[i].title}" from the draft? Discard changes brings it back until you publish.`)) return;
   state.content.projects.splice(i, 1); changed(true);
 }
 
 function changed(rerender = false) {
   state.dirty = true; state.saving = true;
   if (rerender) render(); else renderToolbar();
-  clearTimeout(state.timer);
-  state.timer = setTimeout(saveDraft, 700);
+  clearTimeout(state.timer); state.timer = setTimeout(saveDraft, 700);
 }
 async function saveDraft() {
   clearTimeout(state.timer);
@@ -256,34 +316,30 @@ async function saveDraft() {
     state.dirty = r.dirty; state.savedAt = new Date(r.updatedAt); state.error = null;
   } catch (e) {
     state.error = e.message;
-    if (e.status === 401) { state.owner = false; state.editing = false; toast("Your session ended. Sign in again to keep editing."); await loadPublished(); render(); return; }
+    if (e.status === 401) { state.owner = false; state.editing = false; state.saving = false; toast("Your session ended. Sign in again to keep editing."); await loadPublished(); render(); return; }
   }
   state.saving = false; renderToolbar();
 }
 async function flush() { if (state.saving) await saveDraft(); }
 
 function renderToolbar() {
-  const tb = $("#toolbar");
-  tb.hidden = !state.owner;
+  const tb = $("#toolbar"); tb.hidden = !state.owner;
   if (!state.owner) return;
-  const time = state.savedAt ? state.savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
-  const status = state.error ? `Not saved: ${state.error}`
-    : state.saving ? "Saving draft…"
-    : state.dirty ? `Draft saved${time ? " at " + time : ""}. Not live yet.`
-    : "No unpublished changes.";
+  const time = state.savedAt ? state.savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : null;
+  const status = state.error ? `Not saved: ${state.error}` : state.saving ? "Saving draft…"
+    : state.dirty ? `Draft saved${time ? " " + time : ""} · not live yet` : "Live site is up to date";
   tb.replaceChildren(
     h("span", { class: "tb-status" + (state.error ? " err" : state.dirty ? " dirty" : "") }, status),
     h("div", { class: "tb-actions" },
-      h("button", { type: "button", class: "btn small ghost", onclick: () => setEditing(!state.editing) }, state.editing ? "Preview" : "Edit"),
-      h("button", { type: "button", class: "btn small ghost", disabled: !state.dirty, onclick: discard }, "Discard changes"),
-      h("button", { type: "button", class: "btn small ghost", onclick: showHistory }, "History"),
-      h("button", { type: "button", class: "btn small ghost", onclick: () => openForm("#password") }, "Password"),
-      h("button", { type: "button", class: "btn small ghost", onclick: signOut }, "Sign out"),
-      h("button", { type: "button", class: "btn small solid", disabled: !state.dirty || state.saving, onclick: publish }, "Publish")));
+      h("button", { type: "button", class: "tb-btn", onclick: () => setEditing(!state.editing) }, state.editing ? "[ Preview ]" : "[ Edit ]"),
+      h("button", { type: "button", class: "tb-btn", disabled: !state.dirty, onclick: discard }, "[ Discard changes ]"),
+      h("button", { type: "button", class: "tb-btn", onclick: showHistory }, "[ History ]"),
+      h("button", { type: "button", class: "tb-btn", onclick: () => openForm("#password") }, "[ Password ]"),
+      h("button", { type: "button", class: "tb-btn", onclick: signOut }, "[ Sign out ]"),
+      h("button", { type: "button", class: "btn small", disabled: !state.dirty || state.saving, onclick: publish }, "Publish")));
 }
 
 async function setEditing(on) { await flush(); state.editing = on; render(); }
-
 async function publish() {
   await flush();
   if (!confirm("Publish the draft? Everyone will see it on the live site.")) return;
@@ -299,29 +355,27 @@ async function discard() {
 async function showHistory() {
   await flush();
   const d = $("#history"), list = $(".history-list", d);
-  list.replaceChildren(h("li", {}, "Loading…"));
-  d.showModal();
+  list.replaceChildren(h("li", {}, "Loading…")); d.showModal();
   try {
     const { versions } = await call("/history");
     list.replaceChildren(...(versions.length ? versions.map(v => h("li", {},
       h("span", {}, new Date(v.updatedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })),
-      h("button", { type: "button", class: "btn small", onclick: async () => {
+      h("button", { type: "button", class: "tb-btn", onclick: async () => {
         await call("/restore", { method: "POST", body: { index: v.index } });
         d.close(); await loadDraft(); state.editing = true; render(); toast("Version loaded into your draft. Publish to make it live.");
-      } }, "Restore to draft"))) : [h("li", {}, "No earlier versions yet. Each publish keeps the previous version here.")]));
+      } }, "[ Restore to draft ]"))) : [h("li", {}, "No earlier versions yet. Each publish keeps the previous version here.")]));
   } catch (e) { list.replaceChildren(h("li", {}, e.message)); }
 }
 async function signOut() {
-  await flush();
-  await call("/logout", { method: "POST" }).catch(() => {});
+  await flush(); await call("/logout", { method: "POST" }).catch(() => {});
   state.owner = false; state.editing = false; await loadPublished(); render();
 }
 
 // ---------- sign in / password ----------
 function openSignin() { openForm("#signin"); }
 function openForm(sel) {
-  const d = $(sel); $("form", d)?.reset(); $(".form-error", d) && ($(".form-error", d).textContent = ""); d.showModal();
-  $("input", d)?.focus();
+  const d = $(sel); $("form", d)?.reset(); const err = $(".form-error", d); if (err) err.textContent = "";
+  d.showModal(); $("input", d)?.focus();
 }
 $$("dialog [data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
 
@@ -350,13 +404,12 @@ async function loadDraft() {
   const d = await call("/draft");
   state.content = d.content; state.dirty = d.dirty; state.savedAt = d.dirty ? new Date(d.updatedAt) : null; state.error = null;
 }
-
 window.addEventListener("beforeunload", e => { if (state.saving) { saveDraft(); e.preventDefault(); } });
 
 (async function init() {
+  const t = store.get("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
   try {
-    const me = await call("/me");
-    state.owner = me.owner;
+    state.owner = (await call("/me")).owner;
     if (state.owner) { await loadDraft(); state.editing = true; } else await loadPublished();
     render();
     if (!state.owner && /^#(signin|admin|login)$/.test(location.hash)) openSignin();

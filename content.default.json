@@ -1,17 +1,21 @@
 {
   "profile": {
     "name": "Hai Nguyen",
-    "headline": "Investor and operator who builds his own research tools.",
-    "location": "Vancouver, BC",
-    "summary": "Investment Associate at Openspace Capital, a Southeast Asia multi-stage venture fund with US$800M under management. Five years across corporate finance, start-up strategy and venture investing: I led Every Half Coffee's US$8M Series A, co-led Rize's US$31M Series B, structured a US$11M debt facility for smallholder rice farmers, and ran corporate finance analysis at Shopee.\n\nWharton economics graduate (finance concentration). I speak English, Vietnamese and Mandarin.",
+    "tagline": "Numbers first, then the call.",
+    "role": "Investment Associate @ Openspace Capital",
+    "location": "Vancouver, Canada",
+    "timezone": "America/Vancouver",
+    "about": "Five years across corporate finance, start-up strategy and venture investing in Southeast Asia. I'm an Investment Associate at Openspace Capital, a multi-stage venture fund with US$800M under management, where I led Every Half Coffee's US$8M Series A.\n\nBefore that I co-led Rize's US$31M Series B, structured a US$11M debt facility for smallholder rice farmers and closed the company's first carbon credit offtake. At Shopee I built the models and forecasts behind senior leadership's investment decisions.\n\nOutside deal work, I build tools that answer questions I keep running into as an investor, using only public data. I set the question, the rules and the standard of evidence; Claude writes the code, and everything runs on a free stack of GitHub Actions and Cloudflare. Each number traces back to a public source, nothing uses information that wasn't available at the time, and a rule stays only if the data supports it.",
+    "motto": "Wharton economics. English, Vietnamese and Mandarin.",
     "email": "haing.penn@gmail.com",
     "phone": "+1 236 979 9494",
     "linkedin": "https://www.linkedin.com/in/hai-n-13a45370/",
     "github": "https://github.com/haing-dev"
   },
-  "builder": {
-    "title": "What I build",
-    "intro": "Outside deal work, I build tools that answer questions I keep running into as an investor, using only public data. I set the question, the rules and the standard of evidence; Claude writes the code, and everything runs on a free stack of GitHub Actions and Cloudflare.\n\nEvery tool follows the same rules: each number traces back to a public source, nothing uses information that wasn't available at the time, and a rule stays only if the data supports it."
+  "work": {
+    "label": "Selected tools 2025–2026",
+    "title": "Selected tools",
+    "intro": "Research tools I designed and run on public data. Click a tool for its context, objective and method."
   },
   "projects": [
     {
@@ -20,7 +24,11 @@
       "tag": "Climate markets",
       "title": "Carbon Credit Atlas",
       "summary": "A free map of carbon credit projects across every major registry, with who is buying them.",
-      "facts": ["~14,000 projects", "10+ registries and programmes", "Refreshed automatically"],
+      "facts": [
+        "~14,000 projects",
+        "10+ registries and programmes",
+        "Refreshed automatically"
+      ],
       "context": "Carbon credit data is split across more than ten registries and programmes — Verra, Gold Standard, the UN's CDM, Global Carbon Council, UCR, Japan's JCM, Puro.earth, Isometric and Paris Agreement Article 6 — each with its own format. Buyers are mostly named only in press releases. Working on Rize's first carbon credit offtake, I had no single place to see which projects exist in a market, how much they have issued and who buys them.",
       "objective": "One public, verifiable view of every project in a region: where it is, its credit type, stage and volumes, and its announced buyers. It started with Asia excluding mainland China and now covers every region.",
       "methodology": [
@@ -40,7 +48,11 @@
       "tag": "Biotech investing",
       "title": "Biotech Crash Triage",
       "summary": "Calls each US biotech stock that has just crashed a Buy candidate, Watch or Avoid, and backtests every call.",
-      "facts": ["~1,040 companies", "~4,000 episodes since 2020", "Every call backtested"],
+      "facts": [
+        "~1,040 companies",
+        "~4,000 episodes since 2020",
+        "Every call backtested"
+      ],
       "context": "When a biotech stock halves on trial news, specialist investors say some falls are deserved and some are not, but that judgement is tacit and rarely tested. Average post-crash returns hide the difference between a company with cash, committed funds and other programmes, and one about to raise money on harsh terms.",
       "objective": "On the day a crash or slide is detected, give a rule-based call using only data that was public that day, and check every past call against what happened over the following year.",
       "methodology": [
@@ -60,7 +72,11 @@
       "tag": "Macro",
       "title": "Macro Compass",
       "summary": "Reads 28 public US signals to say where the economy, inflation and markets stand.",
-      "facts": ["28 signals", "3 readings", "History back to 1970"],
+      "facts": [
+        "28 signals",
+        "3 readings",
+        "History back to 1970"
+      ],
       "context": "Macro calls are often made from a few remembered thresholds and anecdotes: one yield level, one indicator, one company's comments. The reading is rarely checked against history, and noisy monthly data makes it easy to change your mind too often.",
       "objective": "One page that answers three questions — is the economy weakening, is inflation running hot, are markets under stress — and shows the evidence behind each answer.",
       "methodology": [
@@ -74,10 +90,49 @@
     }
   ],
   "experience": [
-    { "org": "Openspace Capital", "role": "Investment Associate", "dates": "2026 – now", "note": "Venture and growth investments across Southeast Asia; led Every Half Coffee's US$8M Series A." },
-    { "org": "Rize", "role": "Strategy, Partnership & Business Development Manager", "dates": "2024 – 2026", "note": "Co-led the US$31M Series B; designed a US$11M smallholder debt facility; closed the first carbon credit offtake." },
-    { "org": "Shopee (Sea Group)", "role": "Senior Associate, Corporate Finance & Business Intelligence", "dates": "2021 – 2024", "note": "Financial models and forecasts for senior leadership; US$3.2M+ in cost savings." },
-    { "org": "Orbis Investment", "role": "Summer Analyst", "dates": "2019", "note": "Investment theses, models and due diligence for portfolio managers." },
-    { "org": "The Wharton School, University of Pennsylvania", "role": "BS in Economics, Finance", "dates": "2016 – 2020", "note": "Cum laude; full scholarships." }
+    {
+      "org": "Openspace Capital",
+      "dates": "2026–Present",
+      "role": "Investment Associate",
+      "note": "Venture and growth investing across Southeast Asia; led Every Half Coffee's US$8M Series A."
+    },
+    {
+      "org": "Rize",
+      "dates": "2024–2026",
+      "role": "Strategy, Partnership & BD Manager",
+      "note": "Co-led the US$31M Series B, designed a US$11M smallholder debt facility and closed the first carbon credit offtake."
+    },
+    {
+      "org": "Shopee (Sea Group)",
+      "dates": "2021–2024",
+      "role": "Senior Associate, Corporate Finance",
+      "note": "Models, scenarios and forecasts for senior leadership; US$3.2M+ in cost savings."
+    },
+    {
+      "org": "Orbis Investment",
+      "dates": "2019",
+      "role": "Summer Analyst",
+      "note": "Investment theses, financial models and due diligence for portfolio managers."
+    },
+    {
+      "org": "AKO Capital",
+      "dates": "2017",
+      "role": "Market Research Intern",
+      "note": "Customer and expert interviews to support investment decisions."
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.S. in Economics, Finance concentration",
+      "school": "The Wharton School, University of Pennsylvania",
+      "dates": "2016–2020",
+      "note": "Cum laude; full scholarships worth about US$320,000."
+    },
+    {
+      "degree": "International Baccalaureate",
+      "school": "Waterford Kamhlaba UWC of Southern Africa",
+      "dates": "2013–2015",
+      "note": ""
+    }
   ]
 }
