@@ -1,21 +1,14 @@
 {
   "profile": {
     "name": "Hai Nguyen",
-    "tagline": "Numbers first, then the call.",
-    "role": "Investment Associate @ Openspace Capital",
+    "title": "Hai N.’s Portfolio",
+    "about": "I'm curious by nature, and I love taking a complex question apart: gathering the data and the insights around it, then putting the answer together in the most intuitive form I can.\n\nI've done this across venture capital, climate-tech start-ups and e-commerce in Southeast Asia, and in the tools below, which I build in my spare time.",
     "location": "Vancouver, Canada",
     "timezone": "America/Vancouver",
-    "about": "Five years across corporate finance, start-up strategy and venture investing in Southeast Asia. I'm an Investment Associate at Openspace Capital, a multi-stage venture fund with US$800M under management, where I led Every Half Coffee's US$8M Series A.\n\nBefore that I co-led Rize's US$31M Series B, structured a US$11M debt facility for smallholder rice farmers and closed the company's first carbon credit offtake. At Shopee I built the models and forecasts behind senior leadership's investment decisions.\n\nOutside deal work, I build tools that answer questions I keep running into as an investor, using only public data. I set the question, the rules and the standard of evidence; Claude writes the code, and everything runs on a free stack of GitHub Actions and Cloudflare. Each number traces back to a public source, nothing uses information that wasn't available at the time, and a rule stays only if the data supports it.",
-    "motto": "Wharton economics. English, Vietnamese and Mandarin.",
     "email": "haing.penn@gmail.com",
     "phone": "+1 236 979 9494",
     "linkedin": "https://www.linkedin.com/in/hai-n-13a45370/",
     "github": "https://github.com/haing-dev"
-  },
-  "work": {
-    "label": "Selected tools 2025–2026",
-    "title": "Selected tools",
-    "intro": "Research tools I designed and run on public data. Click a tool for its context, objective and method."
   },
   "projects": [
     {

@@ -53,10 +53,21 @@ async function getDoc(env, key) {
   const raw = await env.CONTENT.get(key);
   return raw ? JSON.parse(raw) : null;
 }
+// The live content counts as "seeded" until the owner first publishes. While it is seeded and the owner has no
+// draft, it follows content.default.json, so starter wording can be improved in code. After the first publish
+// (or once a draft exists) code never replaces it.
+let defaultsHash;
+async function hashDefaults() {
+  if (!defaultsHash) defaultsHash = b64url(await sha256(JSON.stringify(DEFAULTS)));
+  return defaultsHash;
+}
+const isSeeded = (doc) => doc.seeded === true || (doc.version === 1 && !("seeded" in doc));
+
 async function getPublished(env) {
   let doc = await getDoc(env, "published");
-  if (!doc) {
-    doc = { content: structuredClone(DEFAULTS), updatedAt: new Date().toISOString(), version: 1 };
+  const hash = await hashDefaults();
+  if (!doc || (isSeeded(doc) && doc.seedHash !== hash && !(await env.CONTENT.get("draft")))) {
+    doc = { content: structuredClone(DEFAULTS), updatedAt: new Date().toISOString(), version: 1, seeded: true, seedHash: hash };
     await env.CONTENT.put("published", JSON.stringify(doc));
   }
   doc.content = fillMissing(doc.content, DEFAULTS);
@@ -186,7 +197,7 @@ async function api(request, env, url) {
     if (err) return json({ error: err }, 400);
     const history = (await getDoc(env, "history")) || [];
     history.unshift({ content: pub.content, updatedAt: pub.updatedAt, version: pub.version || 1 });
-    const next = { content: draft.content, updatedAt: new Date().toISOString(), version: (pub.version || 1) + 1 };
+    const next = { content: draft.content, updatedAt: new Date().toISOString(), version: (pub.version || 1) + 1, seeded: false };
     await env.CONTENT.put("history", JSON.stringify(history.slice(0, HISTORY_MAX)));
     await env.CONTENT.put("published", JSON.stringify(next));
     await env.CONTENT.delete("draft");

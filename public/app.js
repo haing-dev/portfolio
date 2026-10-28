@@ -83,28 +83,19 @@ const removeBtn = (onclick, label = "Remove") => h("button", { type: "button", c
 // Seeded random numbers so the hero drawing is the same on every visit.
 function rng(seed) { return () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
-function heroArt() {
-  const W = 1200, H = 440, r = rng(20261028), paths = [];
-  const N = 46, start = 70, mid = 560;
-  for (let i = 0; i < N; i++) {
-    let y = H * 0.5 + (r() - 0.5) * 24, d = `M0 ${y.toFixed(1)}`;
-    // the three highlighted paths take a clear up / flat / down route after the decision point
-    const drift = i === 11 ? -2.4 : i === 27 ? 2.2 : i === 3 ? -0.2 : (r() - 0.5) * 5, vol = 4 + r() * 8;
-    for (let x = 12; x <= W; x += 12) {
-      if (x > mid - 12 && x <= mid) y = H / 2 + (y - H / 2) * 0.3;   // paths pinch together at the decision point
-      y += x < mid ? (H / 2 - y) * 0.06 + (r() - 0.5) * vol * 0.7 : drift + (r() - 0.5) * vol;
-      y = Math.max(18, Math.min(H - 18, y));
-      d += ` L${x} ${y.toFixed(1)}`;
+function waves() {
+  // Quiet grey sea: stacked wave lines, denser and stronger toward the bottom.
+  const W = 1200, H = 400, r = rng(7), out = [];
+  for (let i = 0; i < 26; i++) {
+    const base = 40 + i * 14.5, amp = 4 + i * 0.55, f1 = 0.004 + r() * 0.003, f2 = 0.011 + r() * 0.006, ph = r() * 6.28;
+    let d = "";
+    for (let x = 0; x <= W; x += 16) {
+      const y = base + amp * Math.sin(x * f1 + ph) + amp * 0.35 * Math.sin(x * f2 + ph * 1.7);
+      d += (x ? " L" : "M") + x + " " + y.toFixed(1);
     }
-    const cls = i === 3 ? "hp-gold" : i === 11 ? "hp-teal" : i === 27 ? "hp-red" : "hp";
-    paths.push(`<path class="${cls}" d="${d}"/>`);
+    out.push(`<path d="${d}" stroke-opacity="${(0.15 + i * 0.02).toFixed(3)}"/>`);
   }
-  const grid = [...Array(9)].map((_, i) => `<line class="hg" x1="0" x2="${W}" y1="${(i + 1) * H / 10}" y2="${(i + 1) * H / 10}"/>`).join("")
-    + [...Array(11)].map((_, i) => `<line class="hg" y1="0" y2="${H}" x1="${(i + 1) * W / 12}" x2="${(i + 1) * W / 12}"/>`).join("");
-  return svg(`<svg class="hero-art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Abstract chart of many price paths fanning out from one point">
-    <defs><radialGradient id="glow" cx="47%" cy="50%" r="60%"><stop offset="0" stop-color="#2b4a6f" stop-opacity=".55"/><stop offset="1" stop-color="#2b4a6f" stop-opacity="0"/></radialGradient></defs>
-    <rect width="${W}" height="${H}" fill="url(#glow)"/>${grid}<line class="hv" x1="${mid}" x2="${mid}" y1="0" y2="${H}"/>${paths.join("")}
-    <circle class="hdot" cx="${mid}" cy="${H / 2}" r="4"/></svg>`);
+  return svg(`<svg class="waves" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${out.join("")}</svg>`);
 }
 
 const MOTIFS = {
@@ -131,32 +122,41 @@ const MOTIF_NAMES = { map: "Map dots", crash: "Crash and outcomes", gauge: "Thre
 function render() {
   const c = state.content;
   document.body.classList.toggle("editing", state.editing);
-  $("#app").replaceChildren(topbar(c), hero(c), work(c), about(c), experience(c), education(c), contact(c), footer(c));
+  $("#app").replaceChildren(topbar(), hero(c), work(c), experience(c), education(c), footer(c));
   $("#app").removeAttribute("aria-busy");
-  document.title = c.profile.name || "Portfolio";
+  document.title = c.profile.title || c.profile.name || "Portfolio";
   renderToolbar(); tick();
   if (state.openProject >= 0 && $("#project").open) renderProject(state.openProject);
 }
 
-function topbar(c) {
+function topbar() {
   const dark = document.documentElement.dataset.theme === "dark";
   return h("nav", { class: "topbar wrap", "aria-label": "Page" },
     h("div", { class: "tb-left" },
-      h("a", { class: "bracket", href: "#about" }, "[ About ]"),
       h("a", { class: "bracket", href: "#work" }, "[ Tools ]"),
-      h("a", { class: "bracket", href: "#contact" }, "[ Contact ]"),
-      h("button", { type: "button", class: "bracket", "aria-pressed": String(dark), onclick: toggleTheme }, dark ? "[ Light mode ]" : "[ Dark mode ]")),
-    h("div", { class: "tb-right" }, field("span", "profile.role", "text"), field("span", "profile.location", "text")));
+      h("a", { class: "bracket", href: "#experience" }, "[ Experience ]"),
+      h("a", { class: "bracket", href: "#education" }, "[ Education ]")),
+    h("button", { type: "button", class: "bracket", "aria-pressed": String(dark), onclick: toggleTheme }, dark ? "[ Light mode ]" : "[ Dark mode ]"));
 }
 
 function hero(c) {
+  const p = c.profile;
+  const contacts = state.editing
+    ? h("div", { class: "contact-edit" }, input("profile.email", "Email", "email"), input("profile.phone", "Phone"),
+        input("profile.linkedin", "LinkedIn", "url"), input("profile.github", "GitHub", "url"),
+        input("profile.location", "Location"), input("profile.timezone", "Time zone (for the clock)"))
+    : h("ul", { class: "clist" },
+        p.email && h("li", {}, h("span", { class: "ck" }, "Email"), h("a", { href: "mailto:" + p.email }, p.email)),
+        p.phone && h("li", {}, h("span", { class: "ck" }, "Phone"), h("a", { href: "tel:" + p.phone.replace(/[^\d+]/g, "") }, p.phone)),
+        safeUrl(p.linkedin) && h("li", {}, h("span", { class: "ck" }, "LinkedIn"), h("a", { href: p.linkedin, target: "_blank", rel: "noopener" }, "Profile", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
+        safeUrl(p.github) && h("li", {}, h("span", { class: "ck" }, "GitHub"), h("a", { href: p.github, target: "_blank", rel: "noopener" }, p.github.replace(/^https?:\/\/(www\.)?github\.com\//, ""), h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
+        p.location && h("li", {}, h("span", { class: "ck" }, "Based in"), h("span", {}, p.location, h("span", { class: "clock mono", "aria-label": "Local time" }))));
   return h("header", { class: "hero wrap" },
-    h("div", { class: "hero-head" },
-      field("p", "work.label", "text", { class: "kicker" }),
-      h("div", { class: "name-block" },
-        field("p", "profile.tagline", "text", { class: "tagline" }),
-        field("h1", "profile.name", "text", { class: "name" }))),
-    h("div", { class: "hero-panel" }, heroArt()));
+    field("h1", "profile.title", "text", { class: "name" }),
+    h("div", { class: "panel" }, waves(),
+      h("div", { class: "panel-body" },
+        h("section", { class: "panel-about", "aria-label": "About" }, h("h2", { class: "label" }, "About"), field("div", "profile.about", "paras", { class: "prose" })),
+        h("section", { class: "panel-contact", id: "contact", "aria-label": "Contact" }, h("h2", { class: "label" }, "Contact"), contacts))));
 }
 
 const section = (id, label, ...body) =>
@@ -165,9 +165,7 @@ const section = (id, label, ...body) =>
 function work(c) {
   const cards = c.projects.map((p, i) => card(p, i));
   if (state.editing) cards.push(h("button", { class: "card add", type: "button", onclick: addProject }, "[ + Add tool ]"));
-  return section("work", "Tools",
-    field("p", "work.intro", "text", { class: "lede" }),
-    h("div", { class: "grid" }, cards));
+  return section("work", "Tools", h("div", { class: "grid" }, cards));
 }
 
 function card(p, i) {
@@ -191,12 +189,6 @@ function card(p, i) {
       h("button", { type: "button", class: "tb-btn", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "[ ← ]"),
       h("button", { type: "button", class: "tb-btn", disabled: i === last, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "[ → ]"),
       removeBtn(() => deleteProject(i), "Delete")));
-}
-
-function about(c) {
-  return section("about", "About",
-    field("div", "profile.about", "paras", { class: "prose" }),
-    field("p", "profile.motto", "text", { class: "motto" }));
 }
 
 function experience(c) {
@@ -223,24 +215,9 @@ function education(c) {
     state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.education.push({ degree: "Degree", school: "School", dates: "Years", note: "" }); changed(true); } }, "[ + Add school ]"));
 }
 
-function contact(c) {
-  const p = c.profile;
-  const links = state.editing
-    ? h("div", { class: "contact-edit" }, input("profile.email", "Email", "email"), input("profile.phone", "Phone"),
-        input("profile.linkedin", "LinkedIn", "url"), input("profile.github", "GitHub", "url"), input("profile.timezone", "Time zone (for the clock)"))
-    : h("ul", { class: "clist" },
-        p.email && h("li", {}, h("a", { href: "mailto:" + p.email }, p.email)),
-        p.phone && h("li", {}, h("a", { href: "tel:" + p.phone.replace(/[^\d+]/g, "") }, p.phone)),
-        safeUrl(p.linkedin) && h("li", {}, h("a", { href: p.linkedin, target: "_blank", rel: "noopener" }, "LinkedIn", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
-        safeUrl(p.github) && h("li", {}, h("a", { href: p.github, target: "_blank", rel: "noopener" }, "GitHub", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))));
-  return section("contact", "Contact",
-    h("div", { class: "contact-grid" }, links,
-      h("div", { class: "where" }, h("p", {}, p.location), h("p", { class: "mono clock", "aria-label": "Local time" }))));
-}
-
 function footer(c) {
   return h("footer", { class: "foot wrap" },
-    h("span", { class: "mono" }, `© ${new Date().getFullYear()} ${c.profile.name}`),
+    h("span", { class: "mono" }, `© ${new Date().getFullYear()} ${c.profile.name || ""}`),
     state.owner
       ? h("button", { type: "button", class: "bracket", onclick: () => setEditing(!state.editing) }, state.editing ? "[ Preview as visitor ]" : "[ Edit site ]")
       : h("button", { type: "button", class: "bracket", onclick: openSignin }, "[ Owner sign in ]"));
