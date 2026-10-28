@@ -12,6 +12,3 @@ run_worker_first = true
 [[kv_namespaces]]
 binding = "CONTENT"
 id = "KV_ID_PLACEHOLDER"
-
-[vars]
-ADMIN_EMAIL = "haing.wharton@gmail.com"

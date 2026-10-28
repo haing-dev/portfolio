@@ -124,7 +124,7 @@ function render() {
   $("#app").replaceChildren(topbar(), hero(c), work(c), experience(c), education(c), footer(c));
   $("#app").removeAttribute("aria-busy");
   document.title = c.profile.title || c.profile.name || "Portfolio";
-  renderToolbar(); tick();
+  renderToolbar();
   if (state.openProject >= 0 && $("#project").open) renderProject(state.openProject);
 }
 
@@ -170,15 +170,16 @@ async function uploadImage(f, maxWidth, apply, noun) {
 function hero(c) {
   const p = c.profile;
   const contacts = state.editing
-    ? h("div", { class: "contact-edit" }, input("profile.email", "Email", "email"), input("profile.phone", "Phone"),
+    ? h("div", { class: "contact-edit" }, input("profile.email", "Email", "email"), input("profile.email2", "Second email", "email"), input("profile.phone", "Phone"),
         input("profile.linkedin", "LinkedIn", "url"), input("profile.github", "GitHub", "url"),
-        input("profile.location", "Location"), input("profile.timezone", "Time zone (for the clock)"))
+        input("profile.location", "Location"))
     : h("ul", { class: "clist" },
-        p.email && h("li", {}, h("span", { class: "ck" }, "Email"), h("a", { href: "mailto:" + p.email }, p.email)),
+        (p.email || p.email2) && h("li", {}, h("span", { class: "ck" }, "Email"), h("span", { class: "stack" },
+          ...[p.email, p.email2].filter(Boolean).map(e => h("a", { href: "mailto:" + e }, e)))),
         p.phone && h("li", {}, h("span", { class: "ck" }, "Phone"), h("a", { href: "tel:" + p.phone.replace(/[^\d+]/g, "") }, p.phone)),
         safeUrl(p.linkedin) && h("li", {}, h("span", { class: "ck" }, "LinkedIn"), h("a", { href: p.linkedin, target: "_blank", rel: "noopener" }, "Profile", h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
         safeUrl(p.github) && h("li", {}, h("span", { class: "ck" }, "GitHub"), h("a", { href: p.github, target: "_blank", rel: "noopener" }, p.github.replace(/^https?:\/\/(www\.)?github\.com\//, ""), h("span", { class: "ext", "aria-hidden": "true" }, " ↗"))),
-        p.location && h("li", {}, h("span", { class: "ck" }, "Based in"), h("span", {}, p.location, h("span", { class: "clock mono", "aria-label": "Local time" }))));
+        p.location && h("li", {}, h("span", { class: "ck" }, "Based in"), h("span", {}, p.location)));
   return h("header", { class: "hero wrap" },
     field("h1", "profile.title", "text", { class: "name" }),
     h("div", { class: "panel" }, panelBackground(p), state.editing && imageTools(p, "background", "background", 2400, "bg-tools"),
@@ -252,12 +253,6 @@ function footer(c) {
       : h("button", { type: "button", class: "bracket", onclick: openSignin }, "[ Owner sign in ]"));
 }
 
-function tick() {
-  const el = $(".clock"); if (!el) return;
-  try { el.textContent = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: state.content.profile.timezone || "America/Vancouver" }); }
-  catch { el.textContent = ""; }
-}
-setInterval(tick, 20000);
 
 // ---------- project dialog ----------
 function openProject(i) {
@@ -383,7 +378,7 @@ $("#signin-form").addEventListener("submit", async e => {
   const f = e.target, err = $(".form-error", f), btn = $("button[type=submit]", f);
   btn.disabled = true; err.textContent = "";
   try {
-    await call("/login", { method: "POST", body: { email: f.email.value, password: f.password.value } });
+    await call("/login", { method: "POST", body: { password: f.password.value } });
     $("#signin").close(); state.owner = true; state.editing = true;
     await loadDraft(); render(); toast("Signed in. Click any text to edit it.");
     history.replaceState(null, "", location.pathname);

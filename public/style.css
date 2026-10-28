@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; }
 .clist a { text-decoration: none; overflow-wrap: anywhere; }
 .clist a:hover { text-decoration: underline; }
 .ext { color: var(--ink3); font-size: .85em; }
-.clock { margin-left: 12px; }
+.stack { display: flex; flex-direction: column; gap: 2px; }
 
 /* ---------- sections: label column + body ---------- */
 .sec { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; padding-top: 112px; }
@@ -113,7 +113,7 @@ button { font: inherit; color: inherit; }
 .card-tag { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
 .card h3 { font-family: var(--display); font-weight: 400; font-size: 38px; line-height: 1; letter-spacing: -.005em; margin: 0 0 12px; }
 .card-sum { color: var(--ink2); font-size: 17px; line-height: 1.5; }
-.more { align-self: flex-start; margin-top: 18px; }
+.more { align-self: flex-start; margin-top: auto; padding-top: 18px; }
 .more::after { content: ""; position: absolute; inset: 0; }
 .card.clickable:has(.more:focus-visible) { outline: 2px solid var(--focus); outline-offset: 6px; }
 .more:focus-visible { outline: none; }

@@ -166,11 +166,9 @@ async function api(request, env, url) {
     const fails = Number(await env.CONTENT.get(lockKey)) || 0;
     if (fails >= MAX_FAILS) return json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
     let body; try { body = await readJson(request); } catch { return json({ error: "Bad request." }, 400); }
-    const emailOk = String(body.email || "").trim().toLowerCase() === String(env.ADMIN_EMAIL).toLowerCase();
-    const passOk = await checkPassword(env, String(body.password || ""));
-    if (!emailOk || !passOk) {
+    if (!(await checkPassword(env, String(body.password || "")))) {
       await env.CONTENT.put(lockKey, String(fails + 1), { expirationTtl: LOCK_SECONDS });
-      return json({ error: "Email or password is incorrect." }, 401);
+      return json({ error: "That password is incorrect." }, 401);
     }
     await env.CONTENT.delete(lockKey);
     return json({ ok: true }, 200, { "set-cookie": cookie(await makeToken(env), SESSION_DAYS * 86400) });

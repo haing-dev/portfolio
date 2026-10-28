@@ -11,7 +11,6 @@ async function call(path, { method = "GET", body, headers = {} } = {}) {
 let r = await call("/me"); assert.equal(r.data.owner, false);
 r = await call("/draft"); assert.equal(r.status, 401, "draft needs sign-in");
 r = await call("/login", { method: "POST", body: { email: "haing.wharton@gmail.com", password: "wrong" } }); assert.equal(r.status, 401);
-r = await call("/login", { method: "POST", body: { email: "someone@else.com", password: PASS } }); assert.equal(r.status, 401);
 r = await call("/login", { method: "POST", body: { email: "HAING.WHARTON@gmail.com", password: PASS }, headers: { "x-requested-with": "" } }); assert.equal(r.status, 400, "csrf header required");
 r = await call("/login", { method: "POST", body: { email: "HAING.WHARTON@gmail.com", password: PASS } }); assert.equal(r.status, 200);
 r = await call("/me"); assert.equal(r.data.owner, true);

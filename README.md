@@ -8,7 +8,7 @@ Live: https://hai-portfolio.haing-penn.workers.dev (Cloudflare Worker `hai-portf
   (owner's working copy), `history` (last 20 published versions). Deploying code never overwrites it.
 - `content.default.json` only seeds an empty store and fills in fields a newer code version adds. Changing a value
   there does NOT change the live site once content exists; edit through the site instead.
-- Owner sign-in: email `ADMIN_EMAIL` (wrangler.toml) + password from the `ADMIN_PASSWORD` repo secret, or the
+- Owner sign-in: password only — the `ADMIN_PASSWORD` repo secret, or the
   password set with "Password" on the site (stored as a PBKDF2 hash in KV, takes priority). 5 failed attempts per IP
   lock sign-in for 15 minutes. Changing the password signs out other devices.
 
