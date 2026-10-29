@@ -129,12 +129,18 @@ function render() {
 }
 
 function topbar() {
+  const light = document.documentElement.dataset.theme === "light";
   return h("nav", { class: "topbar wrap", "aria-label": "Page" },
     h("div", { class: "tb-left" },
       h("a", { class: "bracket", href: "#work" }, "Tools"),
       h("a", { class: "bracket", href: "#experience" }, "Experience"),
-      h("a", { class: "bracket", href: "#education" }, "Education")));
+      h("a", { class: "bracket", href: "#education" }, "Education")),
+    h("button", { type: "button", class: "bracket", "aria-pressed": String(light), onclick: toggleTheme }, light ? "Dark mode" : "Light mode"));
 }
+
+// Dark by default; each visitor's choice is remembered in their own browser.
+function setTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem("theme", t); } catch {} }
+function toggleTheme() { setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"); render(); }
 
 function panelBackground(p) {
   return isImg(p.background) ? h("img", { class: "panel-img", src: p.background, alt: "", decoding: "async" }) : waves();
@@ -215,7 +221,7 @@ function card(p, i) {
   const last = state.content.projects.length - 1;
   return h("article", { class: "card" }, ...body,
     h("div", { class: "card-tools" },
-      h("button", { type: "button", class: "tb-btn", onclick: () => openProject(i) }, "Edit details"),
+      h("button", { type: "button", class: "btn small", onclick: () => openProject(i) }, "Edit project page"),
       h("button", { type: "button", class: "tb-btn", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "←"),
       h("button", { type: "button", class: "tb-btn", disabled: i === last, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "→"),
       removeBtn(() => deleteProject(i), "Delete")));
@@ -265,6 +271,7 @@ function renderProject(i) {
   const link = safeUrl(p.url);
   const row = (label, el, extra) => h("div", { class: "pd-row" }, h("h3", { class: "label" }, label), h("div", {}, extra, el));
   d.replaceChildren(h("div", { class: "pd" },
+    state.editing && h("p", { class: "edit-banner" }, "Editing this project page. Click any text to change it; changes save to your draft and go live when you publish."),
     h("div", { class: "pd-top" }, field("p", `${base}.tag`, "text", { class: "kicker" }),
       h("button", { type: "button", class: "bracket", "aria-label": "Close", onclick: () => d.close() }, "Close")),
     field("h2", `${base}.title`, "text", { id: "pd-title", class: "pd-title" }),
@@ -401,6 +408,7 @@ async function loadDraft() {
 window.addEventListener("beforeunload", e => { if (state.saving) { saveDraft(); e.preventDefault(); } });
 
 (async function init() {
+  try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
   try {
     state.owner = (await call("/me")).owner;
     if (state.owner) { await loadDraft(); state.editing = true; } else await loadPublished();
