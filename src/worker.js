@@ -56,6 +56,14 @@ async function getDoc(env, key) {
 // The live content counts as "seeded" until the owner first publishes. While it is seeded and the owner has no
 // draft, it follows content.default.json, so starter wording can be improved in code. After the first publish
 // (or once a draft exists) code never replaces it.
+// Projects saved before the "publish dashboard link" switch existed get a starting value: the owner asked for
+// these to start switched off. Once the owner flips a switch, the stored value is used as is.
+const LINK_OFF_AT_START = ["biotech", "macro"];
+function withLinkSwitch(content) {
+  for (const p of content.projects || []) if (p && typeof p === "object" && !("linkLive" in p)) p.linkLive = !LINK_OFF_AT_START.includes(p.id);
+  return content;
+}
+
 let defaultsHash;
 async function hashDefaults() {
   if (!defaultsHash) defaultsHash = b64url(await sha256(JSON.stringify(DEFAULTS)));
@@ -70,12 +78,12 @@ async function getPublished(env) {
     doc = { content: structuredClone(DEFAULTS), updatedAt: new Date().toISOString(), version: 1, seeded: true, seedHash: hash };
     await env.CONTENT.put("published", JSON.stringify(doc));
   }
-  doc.content = fillMissing(doc.content, DEFAULTS);
+  doc.content = withLinkSwitch(fillMissing(doc.content, DEFAULTS));
   return doc;
 }
 async function getDraft(env) {
   const draft = await getDoc(env, "draft");
-  if (draft) { draft.content = fillMissing(draft.content, DEFAULTS); return draft; }
+  if (draft) { draft.content = withLinkSwitch(fillMissing(draft.content, DEFAULTS)); return draft; }
   const pub = await getPublished(env);
   return { content: pub.content, updatedAt: pub.updatedAt, basedOn: pub.version, clean: true };
 }
@@ -126,6 +134,7 @@ function validate(c) {
   for (const p of c.projects) {
     if (!p || typeof p !== "object" || !p.id) return "Each project needs an id.";
     if (p.url && !SAFE_URL.test(p.url)) return `The link for "${p.title}" must start with https://.`;
+    if ("linkLive" in p && typeof p.linkLive !== "boolean") return `The link switch for "${p.title}" must be on or off.`;
     if (p.image && !IMAGE_PATH.test(p.image)) return `The picture for "${p.title}" must be an uploaded image.`;
   }
   for (const k of ["linkedin", "github"]) if (c.profile[k] && !SAFE_URL.test(c.profile[k])) return `The ${k} link must start with https://.`;
@@ -157,7 +166,9 @@ async function api(request, env, url) {
 
   if (path === "/content" && method === "GET") {
     const pub = await getPublished(env);
-    return json({ content: pub.content, updatedAt: pub.updatedAt });
+    // A switched-off dashboard link is not sent to visitors at all.
+    const content = { ...pub.content, projects: pub.content.projects.map(p => (p.linkLive === false ? { ...p, url: "" } : p)) };
+    return json({ content, updatedAt: pub.updatedAt });
   }
 
   if (path === "/login" && method === "POST") {

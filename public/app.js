@@ -268,7 +268,7 @@ function openProject(i) {
 function renderProject(i) {
   const p = state.content.projects[i], base = `projects.${i}`, d = $("#project");
   if (!p) { d.close(); return; }
-  const link = safeUrl(p.url);
+  const link = safeUrl(p.url), live = p.linkLive !== false;
   const row = (label, el, extra) => h("div", { class: "pd-row" }, h("h3", { class: "label" }, label), h("div", {}, extra, el));
   d.replaceChildren(h("div", { class: "pd" },
     state.editing && h("p", { class: "edit-banner" }, "Editing this project page. Click any text to change it; changes save to your draft and go live when you publish."),
@@ -280,16 +280,26 @@ function renderProject(i) {
     row("Objective", field("div", `${base}.objective`, "paras", { class: "prose" })),
     row("Methodology", field("ul", `${base}.methodology`, "lines", { class: "method", "data-placeholder": "One step per line" }),
       state.editing && h("p", { class: "edit-hint" }, "One bullet per line.")),
-    state.editing && row("Settings", h("div", { class: "pd-edit" }, input(`${base}.url`, "Dashboard link", "url"),
+    state.editing && row("Settings", h("div", { class: "pd-edit" }, linkSwitch(p), input(`${base}.url`, "Dashboard link", "url"),
       (() => {
         const sel = h("select", { "aria-label": "Card drawing" }, ...Object.keys(MOTIFS).map(k => h("option", { value: k, selected: p.motif === k }, MOTIF_NAMES[k])));
         sel.addEventListener("change", () => { p.motif = sel.value; changed(true); });
         return h("label", { class: "inline-edit" }, h("span", {}, "Card drawing"), sel);
       })())),
     h("div", { class: "pd-foot" },
-      state.editing ? field("span", `${base}.linkLabel`, "text", { class: "btn" })
-        : link && h("a", { class: "btn", href: link, target: "_blank", rel: "noopener" }, p.linkLabel || "Open the dashboard", h("span", { "aria-hidden": "true" }, " ↗")),
-      link && h("span", { class: "mono muted" }, link.replace(/^https?:\/\//, "").replace(/\/$/, "")))));
+      live
+        ? (state.editing ? field("span", `${base}.linkLabel`, "text", { class: "btn" })
+            : link && h("a", { class: "btn", href: link, target: "_blank", rel: "noopener" }, p.linkLabel || "Open the dashboard", h("span", { "aria-hidden": "true" }, " ↗")))
+        : h("span", { class: "btn soon", "aria-disabled": "true" }, "Coming soon"),
+      live && link && h("span", { class: "mono muted" }, link.replace(/^https?:\/\//, "").replace(/\/$/, "")))));
+}
+
+// On/off switch: whether visitors get the dashboard link or a "Coming soon" label.
+function linkSwitch(p) {
+  const on = p.linkLive !== false;
+  const btn = h("button", { type: "button", class: "switch", role: "switch", "aria-checked": String(on), "aria-label": "Publish the dashboard link",
+    onclick: () => { p.linkLive = !on; changed(true); } }, h("span", { class: "knob", "aria-hidden": "true" }));
+  return h("div", { class: "switch-row" }, btn, h("span", {}, on ? "Dashboard link is published" : "Hidden: visitors see “Coming soon”"));
 }
 $("#project").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
 $("#project").addEventListener("close", () => { state.openProject = -1; });
