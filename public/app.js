@@ -76,7 +76,7 @@ function input(path, label, type = "text") {
   inp.addEventListener("input", () => { setPath(state.content, path, inp.value.trim()); changed(); });
   return h("label", { class: "inline-edit" }, h("span", {}, label), inp);
 }
-const removeBtn = (onclick, label = "Remove") => h("button", { type: "button", class: "tb-btn danger", onclick }, `[ ${label} ]`);
+const removeBtn = (onclick, label = "Remove") => h("button", { type: "button", class: "tb-btn danger", onclick }, label);
 
 // ---------- drawings ----------
 // Seeded random numbers so the hero drawing is the same on every visit.
@@ -131,9 +131,9 @@ function render() {
 function topbar() {
   return h("nav", { class: "topbar wrap", "aria-label": "Page" },
     h("div", { class: "tb-left" },
-      h("a", { class: "bracket", href: "#work" }, "[ Tools ]"),
-      h("a", { class: "bracket", href: "#experience" }, "[ Experience ]"),
-      h("a", { class: "bracket", href: "#education" }, "[ Education ]")));
+      h("a", { class: "bracket", href: "#work" }, "Tools"),
+      h("a", { class: "bracket", href: "#experience" }, "Experience"),
+      h("a", { class: "bracket", href: "#education" }, "Education")));
 }
 
 function panelBackground(p) {
@@ -144,8 +144,8 @@ function imageTools(obj, key, noun, maxWidth, cls) {
   const file = h("input", { type: "file", accept: "image/jpeg,image/png,image/webp", class: "sr", "aria-label": `${noun} image` });
   file.addEventListener("change", () => file.files[0] && uploadImage(file.files[0], maxWidth, path => { obj[key] = path; }, noun));
   return h("div", { class: cls }, file,
-    h("button", { type: "button", class: "tb-btn", onclick: e => { e.stopPropagation(); file.click(); } }, obj[key] ? `[ Replace ${noun} ]` : `[ Upload ${noun} ]`),
-    obj[key] && h("button", { type: "button", class: "tb-btn danger", onclick: e => { e.stopPropagation(); obj[key] = ""; changed(true); } }, `[ Remove ${noun} ]`));
+    h("button", { type: "button", class: "tb-btn", onclick: e => { e.stopPropagation(); file.click(); } }, obj[key] ? `Replace ${noun}` : `Upload ${noun}`),
+    obj[key] && h("button", { type: "button", class: "tb-btn danger", onclick: e => { e.stopPropagation(); obj[key] = ""; changed(true); } }, `Remove ${noun}`));
 }
 const isImg = (v) => /^\/api\/image\/[a-z0-9]+$/.test(v || "");
 
@@ -193,7 +193,7 @@ const section = (id, label, ...body) =>
 
 function work(c) {
   const cards = c.projects.map((p, i) => card(p, i));
-  if (state.editing) cards.push(h("button", { class: "card add", type: "button", onclick: addProject }, "[ + Add tool ]"));
+  if (state.editing) cards.push(h("button", { class: "card add", type: "button", onclick: addProject }, "+ Add tool"));
   return section("work", "Tools", h("div", { class: "grid" }, cards));
 }
 
@@ -210,14 +210,14 @@ function card(p, i) {
   if (!state.editing) {
     return h("article", { class: "card clickable" }, ...body,
       h("button", { type: "button", class: "more bracket", "aria-haspopup": "dialog", onclick: () => openProject(i) },
-        "[ Open the project ]", h("span", { class: "sr" }, `: ${p.title}`)));
+        "Open the project", h("span", { class: "chev", "aria-hidden": "true" }, "›"), h("span", { class: "sr" }, `: ${p.title}`)));
   }
   const last = state.content.projects.length - 1;
   return h("article", { class: "card" }, ...body,
     h("div", { class: "card-tools" },
-      h("button", { type: "button", class: "tb-btn", onclick: () => openProject(i) }, "[ Edit details ]"),
-      h("button", { type: "button", class: "tb-btn", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "[ ← ]"),
-      h("button", { type: "button", class: "tb-btn", disabled: i === last, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "[ → ]"),
+      h("button", { type: "button", class: "tb-btn", onclick: () => openProject(i) }, "Edit details"),
+      h("button", { type: "button", class: "tb-btn", disabled: i === 0, "aria-label": "Move left", onclick: () => moveProject(i, -1) }, "←"),
+      h("button", { type: "button", class: "tb-btn", disabled: i === last, "aria-label": "Move right", onclick: () => moveProject(i, 1) }, "→"),
       removeBtn(() => deleteProject(i), "Delete")));
 }
 
@@ -230,7 +230,7 @@ function experience(c) {
       h("div", { class: "x-note" }, field("p", `${b}.note`, "text"), state.editing && removeBtn(() => { c.experience.splice(i, 1); changed(true); })));
   });
   return section("experience", "Experience", h("ol", { class: "xlist" }, rows),
-    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.experience.push({ org: "Organisation", dates: "Year", role: "Role", note: "" }); changed(true); } }, "[ + Add role ]"));
+    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.experience.push({ org: "Organisation", dates: "Year", role: "Role", note: "" }); changed(true); } }, "+ Add role"));
 }
 
 function education(c) {
@@ -242,15 +242,15 @@ function education(c) {
       h("div", { class: "e-side" }, field("p", `${b}.dates`, "text", { class: "mono" }), state.editing && removeBtn(() => { c.education.splice(i, 1); changed(true); })));
   });
   return section("education", "Education", h("ol", { class: "elist" }, rows),
-    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.education.push({ degree: "Degree", school: "School", dates: "Years", note: "" }); changed(true); } }, "[ + Add school ]"));
+    state.editing && h("button", { type: "button", class: "tb-btn", onclick: () => { c.education.push({ degree: "Degree", school: "School", dates: "Years", note: "" }); changed(true); } }, "+ Add school"));
 }
 
 function footer(c) {
   return h("footer", { class: "foot wrap" },
     h("span", { class: "mono" }, `© ${new Date().getFullYear()} ${c.profile.name || ""}`),
     state.owner
-      ? h("button", { type: "button", class: "bracket", onclick: () => setEditing(!state.editing) }, state.editing ? "[ Preview as visitor ]" : "[ Edit site ]")
-      : h("button", { type: "button", class: "bracket", onclick: openSignin }, "[ Owner sign in ]"));
+      ? h("button", { type: "button", class: "bracket", onclick: () => setEditing(!state.editing) }, state.editing ? "Preview as visitor" : "Edit site")
+      : h("button", { type: "button", class: "bracket", onclick: openSignin }, "Owner sign in"));
 }
 
 
@@ -266,7 +266,7 @@ function renderProject(i) {
   const row = (label, el, extra) => h("div", { class: "pd-row" }, h("h3", { class: "label" }, label), h("div", {}, extra, el));
   d.replaceChildren(h("div", { class: "pd" },
     h("div", { class: "pd-top" }, field("p", `${base}.tag`, "text", { class: "kicker" }),
-      h("button", { type: "button", class: "bracket", "aria-label": "Close", onclick: () => d.close() }, "[ Close ]")),
+      h("button", { type: "button", class: "bracket", "aria-label": "Close", onclick: () => d.close() }, "Close")),
     field("h2", `${base}.title`, "text", { id: "pd-title", class: "pd-title" }),
     field("p", `${base}.summary`, "text", { class: "pd-sum" }),
     row("Context", field("div", `${base}.context`, "paras", { class: "prose" })),
@@ -325,11 +325,11 @@ function renderToolbar() {
   tb.replaceChildren(
     h("span", { class: "tb-status" + (state.error ? " err" : state.dirty ? " dirty" : "") }, status),
     h("div", { class: "tb-actions" },
-      h("button", { type: "button", class: "tb-btn", onclick: () => setEditing(!state.editing) }, state.editing ? "[ Preview ]" : "[ Edit ]"),
-      h("button", { type: "button", class: "tb-btn", disabled: !state.dirty, onclick: discard }, "[ Discard changes ]"),
-      h("button", { type: "button", class: "tb-btn", onclick: showHistory }, "[ History ]"),
-      h("button", { type: "button", class: "tb-btn", onclick: () => openForm("#password") }, "[ Password ]"),
-      h("button", { type: "button", class: "tb-btn", onclick: signOut }, "[ Sign out ]"),
+      h("button", { type: "button", class: "tb-btn", onclick: () => setEditing(!state.editing) }, state.editing ? "Preview" : "Edit"),
+      h("button", { type: "button", class: "tb-btn", disabled: !state.dirty, onclick: discard }, "Discard changes"),
+      h("button", { type: "button", class: "tb-btn", onclick: showHistory }, "History"),
+      h("button", { type: "button", class: "tb-btn", onclick: () => openForm("#password") }, "Password"),
+      h("button", { type: "button", class: "tb-btn", onclick: signOut }, "Sign out"),
       h("button", { type: "button", class: "btn small", disabled: !state.dirty || state.saving, onclick: publish }, "Publish")));
 }
 
@@ -357,7 +357,7 @@ async function showHistory() {
       h("button", { type: "button", class: "tb-btn", onclick: async () => {
         await call("/restore", { method: "POST", body: { index: v.index } });
         d.close(); await loadDraft(); state.editing = true; render(); toast("Version loaded into your draft. Publish to make it live.");
-      } }, "[ Restore to draft ]"))) : [h("li", {}, "No earlier versions yet. Each publish keeps the previous version here.")]));
+      } }, "Restore to draft"))) : [h("li", {}, "No earlier versions yet. Each publish keeps the previous version here.")]));
   } catch (e) { list.replaceChildren(h("li", {}, e.message)); }
 }
 async function signOut() {
